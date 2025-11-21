@@ -19,7 +19,7 @@ keywords = [
 license = { text = "MIT" }
 maintainers = [ { name = "bubaley", email = "bubaley.fu@gmail.com" } ]
 authors = [ { name = "bubaley", email = "bubaley.fu@gmail.com" } ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: FastAPI",
