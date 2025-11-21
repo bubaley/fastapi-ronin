@@ -6,9 +6,9 @@ from app.domains.project.views import router as project_router
 from app.domains.project.views import task_router
 
 app = FastAPI(
-    title='FastAPI Mason',
+    title='FastAPI Ronin',
     version='0.0.0',
-    description='FastAPI Mason is a library for building FastAPI applications with Django REST Framework-inspired ViewSets and utilities',
+    description='FastAPI Ronin is a library for building FastAPI applications with Django REST Framework-inspired ViewSets and utilities',
 )
 register_database(app)
 

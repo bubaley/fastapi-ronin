@@ -2,9 +2,9 @@ include LICENSE
 include README.md
 include pyproject.toml
 
-recursive-include fastapi_mason *.py
-recursive-include fastapi_mason *.json
-recursive-include fastapi_mason *.txt
+recursive-include fastapi_ronin *.py
+recursive-include fastapi_ronin *.json
+recursive-include fastapi_ronin *.txt
 
 global-exclude *.py[cod]
 global-exclude __pycache__

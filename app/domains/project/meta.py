@@ -1,6 +1,6 @@
 from app.core.models import BASE_FIELDS
 from app.domains.company.meta import CompanyMeta
-from fastapi_mason.schemas import SchemaMeta, build_schema_meta
+from fastapi_ronin.schemas import SchemaMeta, build_schema_meta
 
 
 class ProjectMeta(SchemaMeta):

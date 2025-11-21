@@ -1,16 +1,16 @@
 ---
-title: FastAPI Pagination — Efficient Data Management with FastAPI Mason
+title: FastAPI Pagination — Efficient Data Management with FastAPI Ronin
 description: Improve your FastAPI application's performance with Mason's advanced API pagination. Supports multiple strategies like limit-offset and cursor-based pagination for scalable REST APIs.
-keywords: FastAPI pagination, API pagination, Django REST Framework pagination, REST API performance, limit-offset pagination, cursor pagination, FastAPI Mason, scalable APIs, data pagination, Python REST API
+keywords: FastAPI pagination, API pagination, Django REST Framework pagination, REST API performance, limit-offset pagination, cursor pagination, FastAPI Ronin, scalable APIs, data pagination, Python REST API
 ---
 
-# API Pagination: Efficient Data Management with FastAPI Mason
+# API Pagination: Efficient Data Management with FastAPI Ronin
 
-FastAPI Mason provides multiple pagination strategies to efficiently handle large datasets. Each strategy is designed for different use cases and offers various trade-offs between performance, consistency, and user experience.
+FastAPI Ronin provides multiple pagination strategies to efficiently handle large datasets. Each strategy is designed for different use cases and offers various trade-offs between performance, consistency, and user experience.
 
 ## Overview
 
-FastAPI Mason supports four pagination strategies:
+FastAPI Ronin supports four pagination strategies:
 
 1. **DisabledPagination** - No pagination (returns all results)
 2. **LimitOffsetPagination** - Traditional limit/offset pagination
@@ -22,9 +22,9 @@ FastAPI Mason supports four pagination strategies:
 Set pagination on your ViewSet class:
 
 ```python
-from fastapi_mason.pagination import PageNumberPagination
-from fastapi_mason.viewsets import ModelViewSet
-from fastapi_mason.wrappers import PaginatedResponseDataWrapper
+from fastapi_ronin.pagination import PageNumberPagination
+from fastapi_ronin.viewsets import ModelViewSet
+from fastapi_ronin.wrappers import PaginatedResponseDataWrapper
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -42,7 +42,7 @@ class CompanyViewSet(ModelViewSet[Company]):
 Use when you want to return all results without pagination:
 
 ```python
-from fastapi_mason.pagination import DisabledPagination
+from fastapi_ronin.pagination import DisabledPagination
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -64,7 +64,7 @@ class CompanyViewSet(ModelViewSet[Company]):
 The most common pagination strategy, using page numbers and page size:
 
 ```python
-from fastapi_mason.pagination import PageNumberPagination
+from fastapi_ronin.pagination import PageNumberPagination
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -116,7 +116,7 @@ GET /companies/?page=2&size=5
 Traditional pagination using offset and limit:
 
 ```python
-from fastapi_mason.pagination import LimitOffsetPagination
+from fastapi_ronin.pagination import LimitOffsetPagination
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -178,10 +178,10 @@ You can create a custom pagination class by inheriting from the `Pagination` abs
 
 ### Expansion of existing
 ```python
-from fastapi_mason.pagination import PageNumberPagination
+from fastapi_ronin.pagination import PageNumberPagination
 from fastapi import Query
 
-from fastapi_mason.types import ModelType
+from fastapi_ronin.types import ModelType
 
 
 class CustomPageNumberPagination(PageNumberPagination[ModelType]):
@@ -199,12 +199,12 @@ class CustomPageNumberPagination(PageNumberPagination[ModelType]):
 ### Custom
 ```python
 from typing import Any, List
-from fastapi_mason.pagination import Pagination
+from fastapi_ronin.pagination import Pagination
 from fastapi import Query
 import math
 from tortoise.queryset import QuerySet
 
-from fastapi_mason.types import ModelType
+from fastapi_ronin.types import ModelType
 
 
 class CustomPagination(Pagination[ModelType]):

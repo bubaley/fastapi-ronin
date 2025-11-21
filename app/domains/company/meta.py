@@ -1,5 +1,5 @@
 from app.core.models import BASE_FIELDS
-from fastapi_mason.schemas import SchemaMeta
+from fastapi_ronin.schemas import SchemaMeta
 
 
 class CompanyMeta(SchemaMeta):

@@ -1,5 +1,5 @@
 """
-Utility functions for FastAPI Mason core functionality.
+Utility functions for FastAPI Ronin core functionality.
 """
 
 import inspect

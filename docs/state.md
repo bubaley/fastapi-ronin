@@ -1,12 +1,12 @@
 ---
-title: FastAPI Request State Management — Context Handling with FastAPI Mason
-description: Manage request-scoped state efficiently in FastAPI Mason. Use isolated, concurrency-safe context handling to share data across middleware, ViewSets, and components throughout the request lifecycle.
-keywords: FastAPI state management, request context, FastAPI middleware state, Python contextvars, FastAPI Mason, request lifecycle management, concurrent-safe state, request-scoped context, Python API development, FastAPI architecture
+title: FastAPI Request State Management — Context Handling with FastAPI Ronin
+description: Manage request-scoped state efficiently in FastAPI Ronin. Use isolated, concurrency-safe context handling to share data across middleware, ViewSets, and components throughout the request lifecycle.
+keywords: FastAPI state management, request context, FastAPI middleware state, Python contextvars, FastAPI Ronin, request lifecycle management, concurrent-safe state, request-scoped context, Python API development, FastAPI architecture
 ---
 
-# Request State Management in FastAPI Mason
+# Request State Management in FastAPI Ronin
 
-FastAPI Mason offers a request-scoped state management system that lets you safely share data across middleware, ViewSets, and other components during a single request lifecycle. Built with concurrency safety in mind, this system is ideal for passing user data, request context, and other runtime information throughout your FastAPI application.
+FastAPI Ronin offers a request-scoped state management system that lets you safely share data across middleware, ViewSets, and other components during a single request lifecycle. Built with concurrency safety in mind, this system is ideal for passing user data, request context, and other runtime information throughout your FastAPI application.
 
 ## Overview
 
@@ -29,7 +29,7 @@ The most common use case is storing the current user:
 from typing import Optional
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from fastapi_mason.state import BaseStateManager
+from fastapi_ronin.state import BaseStateManager
 
 
 class OptionalHTTPBearer(HTTPBearer):
@@ -226,7 +226,7 @@ state.clear()
 Create your own state manager for additional functionality:
 
 ```python
-from fastapi_mason.state import BaseStateManager
+from fastapi_ronin.state import BaseStateManager
 from typing import Optional
 
 class CustomStateManager(BaseStateManager):
@@ -295,4 +295,4 @@ class CompanyViewSet(ModelViewSet[Company]):
         return await super().perform_create(obj)
 ```
 
-State management in FastAPI Mason provides a clean way to share request-scoped data across your application while maintaining thread safety and proper isolation between requests.
+State management in FastAPI Ronin provides a clean way to share request-scoped data across your application while maintaining thread safety and proper isolation between requests.

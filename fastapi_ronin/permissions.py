@@ -1,5 +1,5 @@
 """
-Permission system for FastAPI Mason viewsets.
+Permission system for FastAPI Ronin viewsets.
 
 Provides permission classes and utilities for access control.
 """
@@ -11,7 +11,7 @@ from fastapi import HTTPException, Request
 SAFE_METHODS = ('GET', 'HEAD', 'OPTIONS')
 
 if TYPE_CHECKING:
-    from fastapi_mason.generics import GenericViewSet
+    from fastapi_ronin.generics import GenericViewSet
 
 
 class BasePermission:

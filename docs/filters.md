@@ -1,12 +1,12 @@
 ---
-title: FastAPI Filters — Powerful QuerySet Filtering with FastAPI Mason
-description: Master FastAPI Mason's advanced filtering system for building complex API queries. Leverage Django ORM-inspired lookups, custom filter types, and automatic query parameter generation for efficient data retrieval.
-keywords: FastAPI filters, API filtering, QuerySet filtering, Django ORM lookups, FastAPI Mason, Python API development, query parameters, REST API filtering, data filtering, search functionality
+title: FastAPI Filters — Powerful QuerySet Filtering with FastAPI Ronin
+description: Master FastAPI Ronin's advanced filtering system for building complex API queries. Leverage Django ORM-inspired lookups, custom filter types, and automatic query parameter generation for efficient data retrieval.
+keywords: FastAPI filters, API filtering, QuerySet filtering, Django ORM lookups, FastAPI Ronin, Python API development, query parameters, REST API filtering, data filtering, search functionality
 ---
 
 # API Filters: Advanced QuerySet Filtering
 
-FastAPI Mason provides a powerful filtering system that allows you to create sophisticated query interfaces for your API endpoints. The system is inspired by Django ORM lookups and provides automatic query parameter generation, type validation, and QuerySet filtering.
+FastAPI Ronin provides a powerful filtering system that allows you to create sophisticated query interfaces for your API endpoints. The system is inspired by Django ORM lookups and provides automatic query parameter generation, type validation, and QuerySet filtering.
 
 ## Overview
 
@@ -22,7 +22,7 @@ The filtering system consists of:
 Here's a simple example of creating and using filters:
 
 ```python
-from fastapi_mason import filters
+from fastapi_ronin import filters
 from app.models import Company, CompanyStatusEnum
 
 class CompanyFilterSet(filters.FilterSet):
@@ -40,8 +40,8 @@ class CompanyFilterSet(filters.FilterSet):
 Then in your ViewSet:
 
 ```python
-from fastapi_mason.decorators import viewset
-from fastapi_mason.viewsets import ModelViewSet
+from fastapi_ronin.decorators import viewset
+from fastapi_ronin.viewsets import ModelViewSet
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):

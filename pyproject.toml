@@ -4,9 +4,9 @@ build-backend = "hatchling.build"
 requires = [ "hatchling" ]
 
 [project]
-name = "fastapi-mason"
+name = "fastapi-ronin"
 version = "0.3.1"
-description = "FastAPI Mason is a library for building FastAPI applications with a Django REST Framework-inspired architecture."
+description = "FastAPI Ronin is a library for building FastAPI applications with a Django REST Framework-inspired architecture."
 readme = "README.md"
 keywords = [
     "django",
@@ -38,9 +38,9 @@ dependencies = [
     "tortoise-orm>=0.25.1",
 ]
 
-urls.Documentation = "https://github.com/bubaley/fastapi-mason#readme"
-urls.Homepage = "https://github.com/bubaley/fastapi-mason"
-urls.Repository = "https://github.com/bubaley/fastapi-mason.git"
+urls.Documentation = "https://github.com/bubaley/fastapi-ronin#readme"
+urls.Homepage = "https://github.com/bubaley/fastapi-ronin"
+urls.Repository = "https://github.com/bubaley/fastapi-ronin.git"
 
 [dependency-groups]
 dev = [

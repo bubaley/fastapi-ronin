@@ -4,8 +4,8 @@ from app.core.viewsets import BaseModelViewSet
 from app.domains.company.filters import CompanyFilterSet
 from app.domains.company.models import Company
 from app.domains.company.schemas import CompanyCreateSchema, CompanySchema
-from fastapi_mason.decorators import action, viewset
-from fastapi_mason.permissions import IsAuthenticated
+from fastapi_ronin.decorators import action, viewset
+from fastapi_ronin.permissions import IsAuthenticated
 
 router = APIRouter(prefix='/companies', tags=['companies'])
 

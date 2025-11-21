@@ -1,9 +1,9 @@
-site_name: FastAPI Mason
+site_name: FastAPI Ronin
 site_description: Build REST APIs fast with Django REST Framework patterns in FastAPI. ViewSets, permissions, pagination, and automatic CRUD operations with Tortoise ORM.
-site_url: https://bubaley.github.io/fastapi-mason/
-repo_url: https://github.com/bubaley/fastapi-mason
-repo_name: bubaley/fastapi-mason
-site_author: FastAPI Mason Team
+site_url: https://bubaley.github.io/fastapi-ronin/
+repo_url: https://github.com/bubaley/fastapi-ronin
+repo_name: bubaley/fastapi-ronin
+site_author: FastAPI Ronin Team
 edit_uri: edit/main/docs/
 
 theme:
@@ -101,13 +101,13 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/bubaley/fastapi-mason
+      link: https://github.com/bubaley/fastapi-ronin
       name: GitHub Repository
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/fastapi-mason/
+      link: https://pypi.org/project/fastapi-ronin/
       name: PyPI Package
     - icon: fontawesome/solid/book
-      link: https://bubaley.github.io/fastapi-mason/
+      link: https://bubaley.github.io/fastapi-ronin/
       name: Documentation
   analytics:
     provider: google
@@ -128,5 +128,5 @@ use_directory_urls: true
 
 # Copyright and additional info
 copyright: >
-  Copyright &copy; 2025 FastAPI Mason Team -
-  <a href="https://github.com/bubaley/fastapi-mason" target="_blank">GitHub</a>
+  Copyright &copy; 2025 FastAPI Ronin Team -
+  <a href="https://github.com/bubaley/fastapi-ronin" target="_blank">GitHub</a>

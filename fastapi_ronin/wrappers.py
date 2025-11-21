@@ -1,5 +1,5 @@
 """
-Response wrapper classes for FastAPI Mason library.
+Response wrapper classes for FastAPI Ronin library.
 
 Provides flexible response formatting and wrapping strategies for API responses.
 """
@@ -9,8 +9,8 @@ from typing import Generic, List, TypeVar
 
 from pydantic import BaseModel
 
-from fastapi_mason.pagination import Pagination
-from fastapi_mason.types import T
+from fastapi_ronin.pagination import Pagination
+from fastapi_ronin.types import T
 
 PaginationType = TypeVar('PaginationType', bound=Pagination)
 

@@ -4,7 +4,7 @@ from typing import Any, Generic, Optional
 
 from fastapi import Request
 
-from fastapi_mason.types import UserType
+from fastapi_ronin.types import UserType
 
 _mason_state: ContextVar['Optional[BaseStateManager[Any]]'] = ContextVar('_mason_state', default=None)
 

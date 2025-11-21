@@ -1,5 +1,5 @@
 """
-Decorators for FastAPI Mason viewsets.
+Decorators for FastAPI Ronin viewsets.
 
 Provides decorators for automatic viewset registration and configuration.
 """
@@ -8,7 +8,7 @@ from typing import Any, Callable, Optional, Type
 
 from fastapi import APIRouter
 
-from fastapi_mason.viewsets import GenericViewSet
+from fastapi_ronin.viewsets import GenericViewSet
 
 
 def viewset(router: APIRouter):

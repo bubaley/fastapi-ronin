@@ -1,5 +1,5 @@
 """
-Concrete pagination implementations for FastAPI Mason library.
+Concrete pagination implementations for FastAPI Ronin library.
 
 Provides ready-to-use pagination classes for different pagination strategies.
 """
@@ -12,7 +12,7 @@ from fastapi import Query
 from pydantic import BaseModel
 from tortoise.queryset import QuerySet
 
-from fastapi_mason.types import ModelType
+from fastapi_ronin.types import ModelType
 
 
 class Pagination(ABC, BaseModel, Generic[ModelType]):

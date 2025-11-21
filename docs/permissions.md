@@ -1,12 +1,12 @@
 ---
-title: FastAPI Permissions — Secure API Access Control with FastAPI Mason
+title: FastAPI Permissions — Secure API Access Control with FastAPI Ronin
 description: Strengthen your FastAPI application's security using Mason's flexible permission system. Supports view-level and object-level permissions inspired by Django REST Framework for precise API access control.
-keywords: FastAPI permissions, API security, access control, Django REST Framework permissions, FastAPI authentication, object-level permissions, view-level permissions, Python API security, REST API protection, FastAPI Mason
+keywords: FastAPI permissions, API security, access control, Django REST Framework permissions, FastAPI authentication, object-level permissions, view-level permissions, Python API security, REST API protection, FastAPI Ronin
 ---
 
-# API Permissions: FastAPI Mason Security System
+# API Permissions: FastAPI Ronin Security System
 
-FastAPI Mason provides a robust permission system that allows you to control access to your API endpoints. The system is inspired by Django REST Framework and provides both view-level and object-level permissions, ensuring your FastAPI applications are secure and properly protected.
+FastAPI Ronin provides a robust permission system that allows you to control access to your API endpoints. The system is inspired by Django REST Framework and provides both view-level and object-level permissions, ensuring your FastAPI applications are secure and properly protected.
 
 ## Overview
 
@@ -22,8 +22,8 @@ The permission system consists of:
 Set permissions on your ViewSet:
 
 ```python
-from fastapi_mason.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from fastapi_mason.viewsets import ModelViewSet
+from fastapi_ronin.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from fastapi_ronin.viewsets import ModelViewSet
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -42,7 +42,7 @@ class CompanyViewSet(ModelViewSet[Company]):
 Allows access only to authenticated users:
 
 ```python
-from fastapi_mason.permissions import IsAuthenticated
+from fastapi_ronin.permissions import IsAuthenticated
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -56,7 +56,7 @@ class CompanyViewSet(ModelViewSet[Company]):
 Allows read access to everyone, write access only to authenticated users:
 
 ```python
-from fastapi_mason.permissions import IsAuthenticatedOrReadOnly
+from fastapi_ronin.permissions import IsAuthenticatedOrReadOnly
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -71,7 +71,7 @@ class CompanyViewSet(ModelViewSet[Company]):
 Denies all access (useful for disabled endpoints):
 
 ```python
-from fastapi_mason.permissions import DenyAll
+from fastapi_ronin.permissions import DenyAll
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -110,7 +110,7 @@ Create your own permission classes by inheriting from `BasePermission`:
 ### IsOwner Permission
 
 ```python
-from fastapi_mason.permissions import BasePermission
+from fastapi_ronin.permissions import BasePermission
 from fastapi import HTTPException
 
 class IsOwner(BasePermission):
@@ -167,7 +167,7 @@ class CompanyViewSet(ModelViewSet[Company]):
 ### Method-Based Permissions
 
 ```python
-from fastapi_mason.permissions import SAFE_METHODS
+from fastapi_ronin.permissions import SAFE_METHODS
 
 class ReadOnlyUnlessOwner(BasePermission):
     """Read-only for everyone, write access for owners"""

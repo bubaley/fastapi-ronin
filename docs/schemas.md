@@ -1,14 +1,14 @@
 ---
 title: FastAPI Schema Generation — Build Secure APIs with Tortoise ORM and Mason
-description: Generate flexible, secure API schemas in FastAPI Mason using Tortoise ORM models and meta class configurations. Control your API fields easily and streamline Python API development.
-keywords: FastAPI schemas, Tortoise ORM, API schema generation, Pydantic models, FastAPI serialization, API field control, Python backend development, REST API schemas, schema customization FastAPI, FastAPI Mason
+description: Generate flexible, secure API schemas in FastAPI Ronin using Tortoise ORM models and meta class configurations. Control your API fields easily and streamline Python API development.
+keywords: FastAPI schemas, Tortoise ORM, API schema generation, Pydantic models, FastAPI serialization, API field control, Python backend development, REST API schemas, schema customization FastAPI, FastAPI Ronin
 ---
 
-# Schemas & Meta: FastAPI Mason Schema Generation with Tortoise ORM
+# Schemas & Meta: FastAPI Ronin Schema Generation with Tortoise ORM
 
-FastAPI Mason offers a powerful schema generation system based on your Tortoise ORM models. Using meta class configurations, you can precisely control which fields appear in your API schemas, making it easy to build secure, flexible, and well-structured REST APIs.
+FastAPI Ronin offers a powerful schema generation system based on your Tortoise ORM models. Using meta class configurations, you can precisely control which fields appear in your API schemas, making it easy to build secure, flexible, and well-structured REST APIs.
 
-FastAPI Mason extends the functionality of `pydantic_model_creator` from Tortoise ORM, providing more flexible and secure schema generation for FastAPI.
+FastAPI Ronin extends the functionality of `pydantic_model_creator` from Tortoise ORM, providing more flexible and secure schema generation for FastAPI.
 
 The `config` parameter uses `PydanticMetaData`, allowing you to apply all standard Tortoise options. For more details on available features and configurations, refer to the [official Tortoise documentation](https://tortoise.github.io/contrib/pydantic.html).
 
@@ -25,7 +25,7 @@ The schema system consists of three main components:
 SchemaMeta classes define the field configuration for your schemas:
 
 ```python
-from fastapi_mason.schemas import SchemaMeta
+from fastapi_ronin.schemas import SchemaMeta
 
 class ProjectMeta(SchemaMeta):
     include = (
@@ -67,7 +67,7 @@ class Project(BaseModel):
 
 ```python title="app/domains/project/meta.py"
 from app.core.models import BASE_FIELDS
-from fastapi_mason.schemas import SchemaMeta
+from fastapi_ronin.schemas import SchemaMeta
 
 class ProjectMeta(SchemaMeta):
     include = (
@@ -79,7 +79,7 @@ class ProjectMeta(SchemaMeta):
 ```
 
 ```python title="app/domains/project/schemas.py"
-from fastapi_mason.schemas import build_schema, rebuild_schema
+from fastapi_ronin.schemas import build_schema, rebuild_schema
 from app.domains.project.models import Project
 from app.domains.project.meta import ProjectMeta
 
@@ -111,7 +111,7 @@ class Task(BaseModel):
 ### Meta Classes for Relationships
 
 ```python title="app/domains/project/meta.py"
-from fastapi_mason.schemas import SchemaMeta, build_schema_meta
+from fastapi_ronin.schemas import SchemaMeta, build_schema_meta
 
 class ProjectMeta(SchemaMeta):
     include = (
@@ -144,7 +144,7 @@ def get_task_with_project_meta():
 ### Schema Generation with Relationships
 
 ```python title="app/domains/project/schemas.py"
-from fastapi_mason.schemas import ConfigSchemaMeta, build_schema, rebuild_schema
+from fastapi_ronin.schemas import ConfigSchemaMeta, build_schema, rebuild_schema
 
 # Simple schemas
 ProjectReadSchema = build_schema(Project, meta=ProjectMeta)
@@ -191,7 +191,7 @@ ProjectMinimalSchema = rebuild_schema(
 Use `ConfigSchemaMeta` for advanced configuration:
 
 ```python
-from fastapi_mason.schemas import ConfigSchemaMeta
+from fastapi_ronin.schemas import ConfigSchemaMeta
 
 # Allow circular references in relationships
 config = ConfigSchemaMeta(allow_cycles=True)
@@ -306,4 +306,4 @@ ProjectCreateSchema = rebuild_schema(
 )
 ```
 
-The schema system in FastAPI Mason provides the flexibility to create exactly the API schemas you need while maintaining clean separation between your data models and API contracts.
+The schema system in FastAPI Ronin provides the flexibility to create exactly the API schemas you need while maintaining clean separation between your data models and API contracts.

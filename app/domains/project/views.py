@@ -8,9 +8,9 @@ from app.domains.project.schemas import (
     TaskCreateSchema,
     TaskReadSchema,
 )
-from fastapi_mason import decorators
-from fastapi_mason.pagination import DisabledPagination
-from fastapi_mason.viewsets import ModelViewSet
+from fastapi_ronin import decorators
+from fastapi_ronin.pagination import DisabledPagination
+from fastapi_ronin.viewsets import ModelViewSet
 
 router = APIRouter(prefix='/projects', tags=['projects'])
 

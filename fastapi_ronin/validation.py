@@ -1,5 +1,5 @@
 """
-Validation utilities for FastAPI Mason viewsets.
+Validation utilities for FastAPI Ronin viewsets.
 
 Provides validation functions to ensure viewset configurations are correct
 and catch common errors early.

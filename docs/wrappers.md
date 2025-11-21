@@ -1,16 +1,16 @@
 ---
-title: FastAPI Response Wrappers — Standardize API Responses with FastAPI Mason
-description: Use FastAPI Mason response wrappers to create consistent, standardized API response formats. Easily include pagination, metadata, and uniform structures across your REST API.
-keywords: FastAPI response wrappers, API response formatting, FastAPI Mason, REST API consistency, response structure standardization, API metadata, pagination response, Python API best practices
+title: FastAPI Response Wrappers — Standardize API Responses with FastAPI Ronin
+description: Use FastAPI Ronin response wrappers to create consistent, standardized API response formats. Easily include pagination, metadata, and uniform structures across your REST API.
+keywords: FastAPI response wrappers, API response formatting, FastAPI Ronin, REST API consistency, response structure standardization, API metadata, pagination response, Python API best practices
 ---
 
 # FastAPI Response Wrappers: Standardize Your API Responses
 
-FastAPI Mason’s response wrappers help you standardize API response formats by wrapping data in a consistent structure. They support adding metadata, pagination details, and ensure uniform responses throughout your REST API for better client integration and maintainability.
+FastAPI Ronin’s response wrappers help you standardize API response formats by wrapping data in a consistent structure. They support adding metadata, pagination details, and ensure uniform responses throughout your REST API for better client integration and maintainability.
 
 ## Overview
 
-FastAPI Mason provides two types of response wrappers:
+FastAPI Ronin provides two types of response wrappers:
 
 1. **ResponseWrapper** - For single objects and simple responses
 2. **PaginatedResponseWrapper** - For paginated list responses with metadata
@@ -22,7 +22,7 @@ FastAPI Mason provides two types of response wrappers:
 The most basic wrapper that puts data in a 'data' field:
 
 ```python
-from fastapi_mason.wrappers import ResponseDataWrapper
+from fastapi_ronin.wrappers import ResponseDataWrapper
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -50,8 +50,8 @@ class CompanyViewSet(ModelViewSet[Company]):
 For paginated list responses with metadata:
 
 ```python
-from fastapi_mason.wrappers import PaginatedResponseDataWrapper
-from fastapi_mason.pagination import PageNumberPagination
+from fastapi_ronin.wrappers import PaginatedResponseDataWrapper
+from fastapi_ronin.pagination import PageNumberPagination
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -87,9 +87,9 @@ class CompanyViewSet(ModelViewSet[Company]):
 Create your own wrapper for consistent API responses:
 
 ```python
-from fastapi_mason.wrappers import ResponseWrapper
+from fastapi_ronin.wrappers import ResponseWrapper
 from datetime import datetime
-from fastapi_mason.types import T
+from fastapi_ronin.types import T
 
 
 class ApiResponseWrapper(ResponseWrapper[T]):
@@ -126,10 +126,10 @@ class ApiResponseWrapper(ResponseWrapper[T]):
 Create a wrapper with additional metadata:
 
 ```python
-from fastapi_mason.wrappers import PaginatedResponseWrapper
-from fastapi_mason.pagination import PageNumberPagination
+from fastapi_ronin.wrappers import PaginatedResponseWrapper
+from fastapi_ronin.pagination import PageNumberPagination
 from typing import List
-from fastapi_mason.types import T
+from fastapi_ronin.types import T
 
 
 class CustomPaginatedWrapper(PaginatedResponseWrapper[T, PageNumberPagination]):

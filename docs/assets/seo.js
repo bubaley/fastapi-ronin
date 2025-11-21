@@ -1,33 +1,33 @@
-// SEO Enhancement Script for FastAPI Mason Documentation
+// SEO Enhancement Script for FastAPI Ronin Documentation
 document.addEventListener('DOMContentLoaded', function() {
 
     // Add essential structured data
     function addStructuredData() {
-        const baseUrl = 'https://bubaley.github.io/fastapi-mason';
+        const baseUrl = 'https://bubaley.github.io/fastapi-ronin';
 
         const websiteData = {
             "@context": "https://schema.org",
             "@type": "WebSite",
-            "name": "FastAPI Mason",
+            "name": "FastAPI Ronin",
             "description": "Django REST Framework-inspired ViewSets and utilities for FastAPI applications with Tortoise ORM",
             "url": baseUrl,
             "publisher": {
                 "@type": "Organization",
-                "name": "FastAPI Mason",
-                "url": "https://github.com/bubaley/fastapi-mason"
+                "name": "FastAPI Ronin",
+                "url": "https://github.com/bubaley/fastapi-ronin"
             }
         };
 
         const softwareData = {
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
-            "name": "FastAPI Mason",
+            "name": "FastAPI Ronin",
             "description": "Build REST APIs fast with Django REST Framework patterns in FastAPI. ViewSets, permissions, pagination, and automatic CRUD operations.",
             "applicationCategory": "WebApplication",
             "programmingLanguage": "Python",
             "url": baseUrl,
-            "downloadUrl": "https://pypi.org/project/fastapi-mason/",
-            "license": "https://github.com/bubaley/fastapi-mason/blob/main/LICENSE",
+            "downloadUrl": "https://pypi.org/project/fastapi-ronin/",
+            "license": "https://github.com/bubaley/fastapi-ronin/blob/main/LICENSE",
             "keywords": ["FastAPI", "Django REST Framework", "ViewSets", "Python", "REST API", "Tortoise ORM"]
         };
 
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return firstParagraph.textContent.slice(0, 160) + '...';
         }
 
-        return 'FastAPI Mason documentation - Django REST Framework patterns for FastAPI applications.';
+        return 'FastAPI Ronin documentation - Django REST Framework patterns for FastAPI applications.';
     }
 
     // Add essential social meta tags
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentUrl = window.location.href;
         const title = document.title;
         const description = getPageDescription();
-        const image = 'https://bubaley.github.io/fastapi-mason/assets/logo.png';
+        const image = 'https://bubaley.github.io/fastapi-ronin/assets/logo.png';
 
         const metaTags = [
             { property: 'og:type', content: 'website' },
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
             { property: 'og:description', content: description },
             { property: 'og:url', content: currentUrl },
             { property: 'og:image', content: image },
-            { property: 'og:site_name', content: 'FastAPI Mason' },
+            { property: 'og:site_name', content: 'FastAPI Ronin' },
 
             { name: 'twitter:card', content: 'summary' },
             { name: 'twitter:title', content: title },

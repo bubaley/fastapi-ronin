@@ -1,5 +1,5 @@
 """
-Generic ViewSet class providing base functionality for FastAPI Mason library.
+Generic ViewSet class providing base functionality for FastAPI Ronin library.
 
 This is the core class that contains all the base methods and setup logic.
 Mixins will only add routes to this generic viewset.
@@ -11,14 +11,14 @@ from fastapi import APIRouter, HTTPException, Request
 from tortoise.contrib.pydantic import PydanticModel
 from tortoise.queryset import QuerySet
 
-from fastapi_mason.filters import EmptyFilterSet, FilterSet
-from fastapi_mason.lookups import BaseLookup, IntegerLookup
-from fastapi_mason.pagination import DisabledPagination, Pagination
-from fastapi_mason.permissions import BasePermission, check_permissions
-from fastapi_mason.routes import TrailingSlashMode, register_action_route, sort_routes_by_specificity
-from fastapi_mason.state import BaseStateManager
-from fastapi_mason.types import ModelType
-from fastapi_mason.wrappers import PaginatedResponseWrapper, ResponseWrapper
+from fastapi_ronin.filters import EmptyFilterSet, FilterSet
+from fastapi_ronin.lookups import BaseLookup, IntegerLookup
+from fastapi_ronin.pagination import DisabledPagination, Pagination
+from fastapi_ronin.permissions import BasePermission, check_permissions
+from fastapi_ronin.routes import TrailingSlashMode, register_action_route, sort_routes_by_specificity
+from fastapi_ronin.state import BaseStateManager
+from fastapi_ronin.types import ModelType
+from fastapi_ronin.wrappers import PaginatedResponseWrapper, ResponseWrapper
 
 
 class GenericViewSet(Generic[ModelType]):

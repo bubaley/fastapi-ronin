@@ -1,7 +1,7 @@
-from fastapi_mason.pagination import PageNumberPagination
-from fastapi_mason.types import ModelType
-from fastapi_mason.viewsets import ModelViewSet
-from fastapi_mason.wrappers import PaginatedResponseDataWrapper, ResponseDataWrapper
+from fastapi_ronin.pagination import PageNumberPagination
+from fastapi_ronin.types import ModelType
+from fastapi_ronin.viewsets import ModelViewSet
+from fastapi_ronin.wrappers import PaginatedResponseDataWrapper, ResponseDataWrapper
 
 
 class BaseModelViewSet(ModelViewSet[ModelType]):

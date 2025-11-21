@@ -1,5 +1,5 @@
 from app.domains.company.models import Company, CompanyStatus
-from fastapi_mason import filters
+from fastapi_ronin import filters
 
 
 class CompanyFilterSet(filters.FilterSet):

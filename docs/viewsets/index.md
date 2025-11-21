@@ -1,12 +1,12 @@
 ---
-title: FastAPI ViewSets — Django REST Framework Patterns with FastAPI Mason
-description: Master FastAPI Mason ViewSets to build REST APIs using Django REST Framework-inspired patterns. Benefit from automatic CRUD, custom actions, and flexible configuration for scalable APIs.
-keywords: FastAPI ViewSets, Django REST Framework ViewSets, REST API patterns, CRUD operations, FastAPI Mason, Python API development, custom ViewSet actions, scalable REST APIs
+title: FastAPI ViewSets — Django REST Framework Patterns with FastAPI Ronin
+description: Master FastAPI Ronin ViewSets to build REST APIs using Django REST Framework-inspired patterns. Benefit from automatic CRUD, custom actions, and flexible configuration for scalable APIs.
+keywords: FastAPI ViewSets, Django REST Framework ViewSets, REST API patterns, CRUD operations, FastAPI Ronin, Python API development, custom ViewSet actions, scalable REST APIs
 ---
 
-# FastAPI ViewSets: Django REST Framework Patterns with FastAPI Mason
+# FastAPI ViewSets: Django REST Framework Patterns with FastAPI Ronin
 
-ViewSets are central to FastAPI Mason, offering a Django REST Framework-inspired approach to building REST APIs. They provide automatic CRUD operations, custom actions, and flexible configuration options, making it easy for Django developers to build high-performance APIs with FastAPI.
+ViewSets are central to FastAPI Ronin, offering a Django REST Framework-inspired approach to building REST APIs. They provide automatic CRUD operations, custom actions, and flexible configuration options, making it easy for Django developers to build high-performance APIs with FastAPI.
 
 ## What are ViewSets?
 
@@ -16,8 +16,8 @@ A ViewSet is a class-based view that groups related actions for a specific resou
 
 ```python
 from fastapi import APIRouter
-from fastapi_mason.decorators import viewset
-from fastapi_mason.viewsets import ModelViewSet
+from fastapi_ronin.decorators import viewset
+from fastapi_ronin.viewsets import ModelViewSet
 
 router = APIRouter(prefix='/companies', tags=['companies'])
 
@@ -36,7 +36,7 @@ class CompanyViewSet(ModelViewSet[Company]):
 
 ## ViewSet Types
 
-FastAPI Mason provides two main ViewSet types:
+FastAPI Ronin provides two main ViewSet types:
 
 ### ModelViewSet
 
@@ -49,7 +49,7 @@ Provides full CRUD operations:
 - **Destroy** (`DELETE /resources/{item_id}/`) - Delete resource
 
 ```python
-from fastapi_mason.viewsets import ModelViewSet
+from fastapi_ronin.viewsets import ModelViewSet
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -66,7 +66,7 @@ Provides only read operations:
 - **Retrieve** (`GET /resources/{item_id}/`) - Get specific resource
 
 ```python
-from fastapi_mason.viewsets import ReadOnlyViewSet
+from fastapi_ronin.viewsets import ReadOnlyViewSet
 
 @viewset(router)
 class CompanyViewSet(ReadOnlyViewSet[Company]):
@@ -114,7 +114,7 @@ class CompanyViewSet(ModelViewSet[Company]):
 ```
 
 !!! tip "Schema Fallbacks"
-    FastAPI Mason provides sensible fallbacks:
+    FastAPI Ronin provides sensible fallbacks:
 
     - `update_schema` defaults to `create_schema`
     - `create_schema` defaults to `update_schema`

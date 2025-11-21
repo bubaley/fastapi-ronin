@@ -1,25 +1,25 @@
 ---
-title: FastAPI Mason — Build REST APIs with Django Patterns in FastAPI
-description: FastAPI Mason brings Django REST Framework patterns to FastAPI. Build robust APIs with ViewSets, automatic CRUD, permissions, and pagination using Tortoise ORM.
-keywords: FastAPI, Django REST Framework, ViewSets, REST API, Tortoise ORM, Python Backend, API Development, CRUD operations, FastAPI Mason
+title: FastAPI Ronin — Build REST APIs with Django Patterns in FastAPI
+description: FastAPI Ronin brings Django REST Framework patterns to FastAPI. Build robust APIs with ViewSets, automatic CRUD, permissions, and pagination using Tortoise ORM.
+keywords: FastAPI, Django REST Framework, ViewSets, REST API, Tortoise ORM, Python Backend, API Development, CRUD operations, FastAPI Ronin
 ---
 <p align="center">
-  <h1 align="center">FastAPI Mason</h1>
+  <h1 align="center">FastAPI Ronin</h1>
 </p>
 <p align="center">
-  <img align="center" src="assets/logo.png" alt="FastAPI Mason - Django REST Framework for FastAPI" width="250"/>
+  <img align="center" src="assets/logo.png" alt="FastAPI Ronin - Django REST Framework for FastAPI" width="250"/>
 </p>
 <p align="center">
   <span>Build REST APIs with Django REST Framework patterns in FastAPI</span>
 </p>
 <p align="center">
-<a href="https://pypi.org/project/fastapi-mason/">
-  <img src="https://img.shields.io/pypi/v/fastapi-mason?color=%2334D058&label=version" alt="Version"/>
+<a href="https://pypi.org/project/fastapi-ronin/">
+  <img src="https://img.shields.io/pypi/v/fastapi-ronin?color=%2334D058&label=version" alt="Version"/>
 </a>
-<a href="https://pypi.org/project/fastapi-mason/">
-  <img src="https://img.shields.io/pypi/pyversions/fastapi-mason.svg?color=%2334D058" alt="Python versions"/>
+<a href="https://pypi.org/project/fastapi-ronin/">
+  <img src="https://img.shields.io/pypi/pyversions/fastapi-ronin.svg?color=%2334D058" alt="Python versions"/>
 </a>
-<a href="https://github.com/bubaley/fastapi-mason/blob/main/LICENSE">
+<a href="https://github.com/bubaley/fastapi-ronin/blob/main/LICENSE">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"/>
 </a>
 </p>
@@ -28,7 +28,7 @@ keywords: FastAPI, Django REST Framework, ViewSets, REST API, Tortoise ORM, Pyth
 
 **Transform your FastAPI development with familiar Django REST Framework patterns.**
 
-If you've worked with Django REST Framework, you'll love FastAPI Mason. It brings the same powerful patterns—ViewSets, automatic CRUD, permissions, and pagination—to FastAPI's high-performance foundation.
+If you've worked with Django REST Framework, you'll love FastAPI Ronin. It brings the same powerful patterns—ViewSets, automatic CRUD, permissions, and pagination—to FastAPI's high-performance foundation.
 
 <div align="center" style="margin: 2rem 0;">
   <a href="quick-start/" class="get-started-btn">
@@ -39,25 +39,25 @@ If you've worked with Django REST Framework, you'll love FastAPI Mason. It bring
 ## 📦 Installation
 
 ```bash
-uv add fastapi-mason
+uv add fastapi-ronin
 ```
 
 ## 🚀 Quick Example
 
-Here's a complete example showing how to build a REST API with FastAPI Mason:
+Here's a complete example showing how to build a REST API with FastAPI Ronin:
 
 ```python
-# main.py - Complete FastAPI Mason application
+# main.py - Complete FastAPI Ronin application
 from fastapi import APIRouter, FastAPI
 from tortoise import fields
 from tortoise.contrib.fastapi import register_tortoise
 from tortoise.models import Model
 
-from fastapi_mason.decorators import action, viewset
-from fastapi_mason.pagination import PageNumberPagination
-from fastapi_mason.schemas import SchemaMeta, build_schema, rebuild_schema
-from fastapi_mason.viewsets import ModelViewSet
-from fastapi_mason.wrappers import PaginatedResponseDataWrapper, ResponseDataWrapper
+from fastapi_ronin.decorators import action, viewset
+from fastapi_ronin.pagination import PageNumberPagination
+from fastapi_ronin.schemas import SchemaMeta, build_schema, rebuild_schema
+from fastapi_ronin.viewsets import ModelViewSet
+from fastapi_ronin.wrappers import PaginatedResponseDataWrapper, ResponseDataWrapper
 
 
 # Database setup
@@ -207,9 +207,9 @@ Request-scoped state management for sharing data across middleware and view comp
 
 ## 🎯 Philosophy
 
-FastAPI Mason is designed with these principles:
+FastAPI Ronin is designed with these principles:
 
-- **Familiar**: If you know Django REST Framework, you already know FastAPI Mason
+- **Familiar**: If you know Django REST Framework, you already know FastAPI Ronin
 - **Flexible**: Customize every aspect while maintaining sensible defaults
 - **Fast**: Built on FastAPI's high-performance foundation
 - **Modular**: Use only what you need, when you need it
@@ -229,12 +229,12 @@ Want to dive deeper? Explore our comprehensive guides:
 
 ## 🤝 Community
 
-FastAPI Mason is open source and welcomes contributions! Whether you're reporting bugs, suggesting features, or submitting pull requests, your involvement helps make the library better for everyone.
+FastAPI Ronin is open source and welcomes contributions! Whether you're reporting bugs, suggesting features, or submitting pull requests, your involvement helps make the library better for everyone.
 
-- **GitHub**: [github.com/bubaley/fastapi-mason](https://github.com/bubaley/fastapi-mason)
+- **GitHub**: [github.com/bubaley/fastapi-ronin](https://github.com/bubaley/fastapi-ronin)
 - **Issues**: Report bugs and request features
 - **Discussions**: Get help and share ideas
 
 ## 📄 License
 
-FastAPI Mason is released under the [MIT License](https://github.com/bubaley/fastapi-mason/blob/main/LICENSE).
+FastAPI Ronin is released under the [MIT License](https://github.com/bubaley/fastapi-ronin/blob/main/LICENSE).

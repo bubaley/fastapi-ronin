@@ -1,12 +1,12 @@
 ---
-title: FastAPI Object Lookups — Flexible URL Parameter Handling with FastAPI Mason
-description: Manage object retrieval in FastAPI Mason using flexible lookup strategies. Support int, string, UUID, and custom lookups for precise REST API routing and parameter validation.
-keywords: FastAPI lookups, URL parameters, object retrieval, FastAPI Mason lookups, REST API routing, parameter validation, custom lookup methods, Python API development
+title: FastAPI Object Lookups — Flexible URL Parameter Handling with FastAPI Ronin
+description: Manage object retrieval in FastAPI Ronin using flexible lookup strategies. Support int, string, UUID, and custom lookups for precise REST API routing and parameter validation.
+keywords: FastAPI lookups, URL parameters, object retrieval, FastAPI Ronin lookups, REST API routing, parameter validation, custom lookup methods, Python API development
 ---
 
 # FastAPI Object Lookups: Flexible URL Parameter-Based Retrieval
 
-FastAPI Mason offers a flexible object lookup system that controls how items are retrieved from URL parameters. Supporting multiple strategies including int, string, UUID, and custom methods, it enables customizable and precise REST API routing.
+FastAPI Ronin offers a flexible object lookup system that controls how items are retrieved from URL parameters. Supporting multiple strategies including int, string, UUID, and custom methods, it enables customizable and precise REST API routing.
 
 ## Overview
 
@@ -21,7 +21,7 @@ The lookup system consists of:
 By default, a ViewSet uses `IntegerLookup` to retrieve objects by integer ID:
 
 ```python
-from fastapi_mason.viewsets import ModelViewSet
+from fastapi_ronin.viewsets import ModelViewSet
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -42,7 +42,7 @@ This creates routes like `/companies/{item_id}/`, where `item_id` is an integer.
 Example of explicitly setting a lookup class:
 
 ```python
-from fastapi_mason.lookups import StringLookup
+from fastapi_ronin.lookups import StringLookup
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -60,7 +60,7 @@ Now the route will be `/companies/{item_id}/`, where `item_id` is a string (e.g.
 You can create your own lookup class to support special strategies or parameter names:
 
 ```python
-from fastapi_mason.lookups import build_lookup_class
+from fastapi_ronin.lookups import build_lookup_class
 from uuid import UUID
 
 # Create a lookup by UUID with a custom parameter name
@@ -86,7 +86,7 @@ For example, let's create a lookup that decodes a base64-encoded token from the 
 ```python
 import base64
 from fastapi import Path, HTTPException
-from fastapi_mason.lookups import BaseLookup
+from fastapi_ronin.lookups import BaseLookup
 
 class TokenLookup(BaseLookup):
     lookup_url_kwarg = 'token'
@@ -119,8 +119,8 @@ This will create a route like `/resources/{token}/`, where `token` is a base64-e
 The lookup class can also be used in custom detail actions to preserve API consistency and ensure uniform object retrieval handling:
 
 ```python
-from fastapi_mason.decorators import action
-from fastapi_mason.lookups import IntegerLookup
+from fastapi_ronin.decorators import action
+from fastapi_ronin.lookups import IntegerLookup
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):

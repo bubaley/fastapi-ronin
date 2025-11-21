@@ -4,7 +4,7 @@ from tortoise.contrib.pydantic import PydanticModel
 
 from app.domains.project.meta import get_project_with_tasks_meta, get_task_with_project_meta
 from app.domains.project.models import Project, Task
-from fastapi_mason.schemas import ConfigSchemaMeta, build_schema, rebuild_schema
+from fastapi_ronin.schemas import ConfigSchemaMeta, build_schema, rebuild_schema
 
 ProjectReadSchema = build_schema(
     Project,

@@ -20,7 +20,7 @@ Disallow: /search/
 Disallow: /*?*
 
 # Sitemap location
-Sitemap: https://bubaley.github.io/fastapi-mason/sitemap.xml
+Sitemap: https://bubaley.github.io/fastapi-ronin/sitemap.xml
 
 # Crawl-delay for being respectful to servers
 Crawl-delay: 1

@@ -1,12 +1,12 @@
 ---
-title: FastAPI Custom Actions — Extend ViewSet Endpoints with FastAPI Mason
-description: Enhance your FastAPI Mason ViewSets by adding custom endpoints using the @action decorator. Implement complex business logic beyond CRUD with full context support.
-keywords: FastAPI custom actions, ViewSet custom endpoints, FastAPI Mason decorators, REST API custom methods, extend ViewSets, Python API development
+title: FastAPI Custom Actions — Extend ViewSet Endpoints with FastAPI Ronin
+description: Enhance your FastAPI Ronin ViewSets by adding custom endpoints using the @action decorator. Implement complex business logic beyond CRUD with full context support.
+keywords: FastAPI custom actions, ViewSet custom endpoints, FastAPI Ronin decorators, REST API custom methods, extend ViewSets, Python API development
 ---
 
-# Custom Actions: Extend ViewSet Endpoints in FastAPI Mason
+# Custom Actions: Extend ViewSet Endpoints in FastAPI Ronin
 
-FastAPI Mason allows you to extend ViewSets by adding custom actions using the @action decorator. This lets you implement complex business logic and custom endpoints beyond standard CRUD operations, all with proper request context handling for seamless API functionality.
+FastAPI Ronin allows you to extend ViewSets by adding custom actions using the @action decorator. This lets you implement complex business logic and custom endpoints beyond standard CRUD operations, all with proper request context handling for seamless API functionality.
 
 
 > **Important:** Always add custom routes to your ViewSets using the `@action` decorator. This ensures that you have access to the request context via `self`, and all lifecycle hooks and permission checks are properly handled. Defining routes outside of `@action` will break context and hook processing.
@@ -20,7 +20,7 @@ Actions are custom methods in your ViewSet that are automatically registered as 
 ## Basic Action Usage
 
 ```python
-from fastapi_mason.decorators import action
+from fastapi_ronin.decorators import action
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
@@ -175,4 +175,4 @@ async def activate(self, item_id: int):
     return {"message": "Company activated"}
 ```
 
-Actions provide a powerful way to extend your ViewSets with custom business logic while maintaining the clean, declarative style of FastAPI Mason.
+Actions provide a powerful way to extend your ViewSets with custom business logic while maintaining the clean, declarative style of FastAPI Ronin.

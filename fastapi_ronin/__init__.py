@@ -7,11 +7,11 @@ including permissions, pagination, filtering, and custom actions.
 
 """
 
-__title__ = 'fastapi_mason'
+__title__ = 'fastapi_ronin'
 
 __description__ = 'Django REST Framework-inspired ViewSets and utilities for FastAPI'
 
-__url__ = 'https://github.com/bubaley/fastapi-mason'
+__url__ = 'https://github.com/bubaley/fastapi-ronin'
 
 __author__ = 'bubaley'
 

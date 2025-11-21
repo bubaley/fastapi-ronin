@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import Query
 from tortoise.queryset import QuerySet
 
-from fastapi_mason.filters.lookups import ALLOWED_LOOKUPS_BY_TYPE, LOOKUP_EXPRESSIONS, LOOKUP_TYPES
+from fastapi_ronin.filters.lookups import ALLOWED_LOOKUPS_BY_TYPE, LOOKUP_EXPRESSIONS, LOOKUP_TYPES
 
 
 @dataclass

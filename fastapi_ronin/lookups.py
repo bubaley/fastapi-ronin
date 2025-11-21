@@ -1,5 +1,5 @@
 """
-Lookup implementations for FastAPI Mason library.
+Lookup implementations for FastAPI Ronin library.
 
 Provides ready-to-use lookup classes for different lookup strategies.
 """
@@ -11,7 +11,7 @@ from uuid import UUID
 from fastapi import Path
 from pydantic import BaseModel
 
-from fastapi_mason.types import T
+from fastapi_ronin.types import T
 
 
 class BaseLookup(ABC, BaseModel, Generic[T]):

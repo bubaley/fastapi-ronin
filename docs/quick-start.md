@@ -1,22 +1,22 @@
 ---
-title: FastAPI Mason Tutorial — Quick Start Guide to Building REST APIs
-description: Learn how to build REST APIs quickly with FastAPI Mason. Follow this step-by-step tutorial to use ViewSets, permissions, and automatic CRUD operations.
-keywords: FastAPI tutorial, FastAPI Mason tutorial, REST API guide, Python REST API tutorial, Django REST Framework patterns, CRUD API FastAPI, ViewSets FastAPI, Python backend development, API development tutorial
+title: FastAPI Ronin Tutorial — Quick Start Guide to Building REST APIs
+description: Learn how to build REST APIs quickly with FastAPI Ronin. Follow this step-by-step tutorial to use ViewSets, permissions, and automatic CRUD operations.
+keywords: FastAPI tutorial, FastAPI Ronin tutorial, REST API guide, Python REST API tutorial, Django REST Framework patterns, CRUD API FastAPI, ViewSets FastAPI, Python backend development, API development tutorial
 ---
 
-# FastAPI Mason Quick Start: Build REST APIs in Minutes
+# FastAPI Ronin Quick Start: Build REST APIs in Minutes
 
-Get started with FastAPI Mason and build your first REST API fast! This step-by-step guide shows how to install FastAPI Mason and structure your project using familiar patterns like ViewSets, permissions, and automatic CRUD operations.
+Get started with FastAPI Ronin and build your first REST API fast! This step-by-step guide shows how to install FastAPI Ronin and structure your project using familiar patterns like ViewSets, permissions, and automatic CRUD operations.
 
 ## 📦 Installation
 
-Install FastAPI Mason using pip:
+Install FastAPI Ronin using pip:
 
 ```bash
-uv add fastapi-mason
+uv add fastapi-ronin
 ```
 
-You'll also need FastAPI and an ORM. FastAPI Mason works great with Tortoise ORM:
+You'll also need FastAPI and an ORM. FastAPI Ronin works great with Tortoise ORM:
 
 ```bash
 uv add fastapi tortoise-orm
@@ -54,7 +54,7 @@ This structure provides:
 
 ## ⚙️ Project Setup
 
-Let's build a project management API with related tasks to demonstrate FastAPI Mason's capabilities with linked models.
+Let's build a project management API with related tasks to demonstrate FastAPI Ronin's capabilities with linked models.
 
 ### 1. Create Base Model
 
@@ -78,10 +78,10 @@ BASE_FIELDS = ('id', 'created_at', 'updated_at')
 ### 2. Basic viewset for easy reuse
 
 ```python title="app/core/viewsets.py"
-from fastapi_mason.pagination import PageNumberPagination
-from fastapi_mason.viewsets import ModelViewSet
-from fastapi_mason.types import ModelType
-from fastapi_mason.wrappers import PaginatedResponseDataWrapper, ResponseDataWrapper
+from fastapi_ronin.pagination import PageNumberPagination
+from fastapi_ronin.viewsets import ModelViewSet
+from fastapi_ronin.types import ModelType
+from fastapi_ronin.wrappers import PaginatedResponseDataWrapper, ResponseDataWrapper
 
 
 class BaseViewSet(ModelViewSet[ModelType]):
@@ -117,7 +117,7 @@ Define which fields to include in your API schemas and how to handle relationshi
 
 ```python title="app/domains/project/meta.py"
 from app.core.models import BASE_FIELDS
-from fastapi_mason.schemas import SchemaMeta, build_schema_meta
+from fastapi_ronin.schemas import SchemaMeta, build_schema_meta
 
 
 class ProjectMeta(SchemaMeta):
@@ -154,7 +154,7 @@ def get_task_with_project_meta():
 
 ### 5. Generate Schemas
 
-Use FastAPI Mason's schema generation to create Pydantic models for related data:
+Use FastAPI Ronin's schema generation to create Pydantic models for related data:
 
 ```python title="app/domains/project/schemas.py"
 from typing import TYPE_CHECKING
@@ -168,12 +168,12 @@ from app.domains.project.meta import (
     get_task_with_project_meta,
 )
 from app.domains.project.models import Project, Task
-from fastapi_mason.schemas import ConfigSchemaMeta, build_schema, rebuild_schema
+from fastapi_ronin.schemas import ConfigSchemaMeta, build_schema, rebuild_schema
 
 """
 https://tortoise.github.io/examples/pydantic.html?h=init_models#early-model-init
 Set up models in advance here or place them in database.py (example)
-https://github.com/bubaley/fastapi-mason/blob/main/app/core/database.py
+https://github.com/bubaley/fastapi-ronin/blob/main/app/core/database.py
 """
 Tortoise.init_models(["app.domains.project.models"], "models")
 
@@ -216,9 +216,9 @@ Now create ViewSets for both models with relationship handling:
 
 ```python title="app/domains/project/views.py"
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi_mason.decorators import action, viewset
-from fastapi_mason.pagination import PageNumberPagination
-from fastapi_mason.wrappers import PaginatedResponseDataWrapper
+from fastapi_ronin.decorators import action, viewset
+from fastapi_ronin.pagination import PageNumberPagination
+from fastapi_ronin.wrappers import PaginatedResponseDataWrapper
 
 from app.core.viewsets import BaseViewSet
 from app.domains.project.models import Project, Task
@@ -299,7 +299,7 @@ from app.domains.project.views import router as projects_router, tasks_router
 
 app = FastAPI(
     title="Project Management API",
-    description="A project management API built with FastAPI Mason",
+    description="A project management API built with FastAPI Ronin",
     version="1.0.0"
 )
 
@@ -428,7 +428,7 @@ Want to add authentication? It's easy with state management:
 from typing import Optional
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from fastapi_mason.state import BaseStateManager
+from fastapi_ronin.state import BaseStateManager
 
 
 class OptionalHTTPBearer(HTTPBearer):
@@ -463,7 +463,7 @@ app = FastAPI(dependencies=[Depends(get_current_user)])
 Protect your endpoints with permission classes:
 
 ```python title="app/domains/project/views.py"
-from fastapi_mason.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from fastapi_ronin.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
 @viewset(router)
 class ProjectViewSet(ModelViewSet[Project]):
@@ -480,7 +480,7 @@ class ProjectViewSet(ModelViewSet[Project]):
 
 ## 🎯 Next Steps
 
-Congratulations! You've built a complete REST API with related models using FastAPI Mason. Here's what to explore next:
+Congratulations! You've built a complete REST API with related models using FastAPI Ronin. Here's what to explore next:
 
 - **[ViewSets](viewsets/index.md)** - Learn about advanced ViewSet features
 - **[Meta & Schemas](schemas.md)** - Master schema generation and relationships

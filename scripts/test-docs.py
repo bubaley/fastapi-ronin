@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Documentation testing script for FastAPI Mason.
+Documentation testing script for FastAPI Ronin.
 
 This script performs various checks on the documentation to ensure quality and consistency.
 """
@@ -189,7 +189,7 @@ def check_code_examples() -> bool:
 
 def main():
     """Run all documentation checks."""
-    print('🚀 Starting documentation tests for FastAPI Mason\n')
+    print('🚀 Starting documentation tests for FastAPI Ronin\n')
 
     # Change to project root
     project_root = Path(__file__).parent.parent

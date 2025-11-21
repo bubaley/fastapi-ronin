@@ -1,19 +1,19 @@
 """
-Base viewset classes for FastAPI Mason library.
+Base viewset classes for FastAPI Ronin library.
 
 These classes inherit from GenericViewSet and use mixins to add specific routes.
 They are simple classes that combine the generic functionality with route mixins.
 """
 
-from fastapi_mason.generics import GenericViewSet
-from fastapi_mason.mixins import (
+from fastapi_ronin.generics import GenericViewSet
+from fastapi_ronin.mixins import (
     CreateMixin,
     DestroyMixin,
     ListMixin,
     RetrieveMixin,
     UpdateMixin,
 )
-from fastapi_mason.types import ModelType
+from fastapi_ronin.types import ModelType
 
 
 class ModelViewSet(

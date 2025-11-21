@@ -1,5 +1,5 @@
 """
-Mixins for FastAPI Mason viewsets.
+Mixins for FastAPI Ronin viewsets.
 
 These mixins only add specific routes to the GenericViewSet.
 They do not contain any business logic - all logic is in GenericViewSet.
@@ -10,13 +10,13 @@ from typing import TYPE_CHECKING, Generic
 from fastapi import Depends
 from pydantic import BaseModel
 
-from fastapi_mason.lookups import BaseLookup
-from fastapi_mason.pagination import DisabledPagination, Pagination
-from fastapi_mason.routes import add_wrapped_route, build_route_path
-from fastapi_mason.types import ModelType
+from fastapi_ronin.lookups import BaseLookup
+from fastapi_ronin.pagination import DisabledPagination, Pagination
+from fastapi_ronin.routes import add_wrapped_route, build_route_path
+from fastapi_ronin.types import ModelType
 
 if TYPE_CHECKING:
-    from fastapi_mason.generics import GenericViewSet
+    from fastapi_ronin.generics import GenericViewSet
 
 
 class ListMixin(Generic[ModelType]):
