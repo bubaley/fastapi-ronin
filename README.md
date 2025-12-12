@@ -51,16 +51,19 @@ Here's a complete example showing how to build a REST API with FastAPI Ronin:
 
 ```python
 # main.py - Complete FastAPI Ronin application
+from datetime import datetime
+
 from fastapi import APIRouter, FastAPI
 from tortoise import fields
 from tortoise.contrib.fastapi import register_tortoise
+from tortoise.contrib.pydantic import PydanticModel
 from tortoise.models import Model
 
-from fastapi_ronin.decorators import action, viewset
+from fastapi_ronin.decorators import action, schema, viewset
 from fastapi_ronin.pagination import PageNumberPagination
-from fastapi_ronin.schemas import SchemaMeta, build_schema, rebuild_schema
 from fastapi_ronin.viewsets import ModelViewSet
 from fastapi_ronin.wrappers import PaginatedResponseDataWrapper, ResponseDataWrapper
+
 
 # Database setup
 def register_database(app: FastAPI):
@@ -72,6 +75,7 @@ def register_database(app: FastAPI):
         add_exception_handlers=True,
     )
 
+
 # Models
 class Company(Model):
     id = fields.IntField(primary_key=True)
@@ -80,21 +84,33 @@ class Company(Model):
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
-# Schema meta
-class CompanyMeta(SchemaMeta):
-    include = ('id', 'name', 'full_name', 'created_at', 'updated_at')
 
 # Schemas
-CompanySchema = build_schema(Company, meta=CompanyMeta)
-CompanyCreateSchema = rebuild_schema(CompanySchema, exclude_readonly=True)
+
+
+@schema(model=Company)
+class CompanyCreateSchema(PydanticModel):
+    name: str
+    full_name: str
+
+
+@schema(model=Company)
+class CompanyReadSchema(PydanticModel):
+    id: int
+    name: str
+    full_name: str
+    created_at: datetime
+    updated_at: datetime
+
 
 # Views
 router = APIRouter(prefix='/companies', tags=['companies'])
 
+
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
     model = Company
-    read_schema = CompanySchema
+    read_schema = CompanyReadSchema
     create_schema = CompanyCreateSchema
 
     pagination = PageNumberPagination
@@ -103,9 +119,10 @@ class CompanyViewSet(ModelViewSet[Company]):
 
     # permission_classes = [IsAuthenticatedOrReadOnly]
 
-    @action(methods=['GET'], detail=False, response_model=dict[str, int])
-    async def stats(self):
+    @action(methods=['GET'], detail=False)
+    async def stats(self) -> dict[str, int]:
         return {'total': await Company.all().count()}
+
 
 # Application
 app = FastAPI(title='My API')
