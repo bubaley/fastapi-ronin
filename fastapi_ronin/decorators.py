@@ -7,6 +7,8 @@ Provides decorators for automatic viewset registration and configuration.
 from typing import Any, Callable, Optional, Type
 
 from fastapi import APIRouter
+from tortoise import Model
+from tortoise.contrib.pydantic import PydanticModel
 
 from fastapi_ronin.viewsets import GenericViewSet
 
@@ -25,8 +27,7 @@ def viewset(router: APIRouter):
 
         except Exception as e:
             raise RuntimeError(
-                f'Failed to initialize viewset {cls.__name__}: {e}. '
-                f'Make sure all required attributes (model, schemas) are set.'
+                f'Failed to initialize viewset {cls.__name__}: {e}. Please check the configuration.'
             ) from e
 
         return cls
@@ -57,5 +58,16 @@ def action(
         func._action_kwargs = kwargs
 
         return func
+
+    return decorator
+
+
+def schema(model: Type[Model], **kwargs):
+    """Decorator to mark a viewset method as a routable action."""
+
+    def decorator(cls: Type[PydanticModel]) -> Type[PydanticModel]:
+        cls.model_config['orig_model'] = model  # type: ignore
+
+        return cls
 
     return decorator

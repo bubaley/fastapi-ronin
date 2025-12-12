@@ -106,13 +106,6 @@ class GenericViewSet(Generic[ModelType]):
         self.many_read_schema = self.many_read_schema or self.read_schema
         self.read_schema = self.read_schema or self.many_read_schema
 
-        # Validate that we have all required schemas
-        if not self.read_schema:
-            raise ValueError(f"At least 'read_schema' must be provided for {self.__class__.__name__}")
-
-        if not self.model:
-            raise ValueError(f'Model must be provided for {self.__class__.__name__}')
-
     async def check_permissions(self, obj: Any = None) -> None:
         """Check permissions for the current request."""
         await check_permissions(self.get_permissions(), self.request, self, obj)
@@ -123,6 +116,8 @@ class GenericViewSet(Generic[ModelType]):
 
     def get_queryset(self) -> QuerySet[ModelType]:
         """Get base queryset for the model."""
+        if not self.model:
+            raise ValueError(f'Model must be provided for {self.__class__.__name__}')
         return self.model.all()
 
     def get_filter_class(self) -> Optional[Type['FilterSet']]:
@@ -167,6 +162,8 @@ class GenericViewSet(Generic[ModelType]):
 
     def get_list_response_model(self) -> Any:
         """Get response model for list endpoint."""
+        if not self.many_read_schema:
+            raise ValueError(f'Read schema must be provided for {self.__class__.__name__}')
         if self.list_wrapper:
             if self.list_wrapper and issubclass(self.list_wrapper, ResponseWrapper):
                 return self.list_wrapper[self.many_read_schema]  # type: ignore
@@ -186,6 +183,8 @@ class GenericViewSet(Generic[ModelType]):
 
     def get_single_response_model(self) -> Any:
         """Get response model for single endpoint."""
+        if not self.read_schema:
+            raise ValueError(f'Read schema must be provided for {self.__class__.__name__}')
         if self.single_wrapper:
             if self.single_wrapper and issubclass(self.single_wrapper, ResponseWrapper):
                 return self.single_wrapper[self.read_schema]  # type: ignore

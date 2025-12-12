@@ -1,30 +1,51 @@
-from typing import TYPE_CHECKING
+from datetime import datetime
 
 from tortoise.contrib.pydantic import PydanticModel
 
-from app.domains.project.meta import get_project_with_tasks_meta, get_task_with_project_meta
+from app.domains.company.models import Company
 from app.domains.project.models import Project, Task
-from fastapi_ronin.schemas import ConfigSchemaMeta, build_schema, rebuild_schema
-
-ProjectReadSchema = build_schema(
-    Project,
-    meta=get_project_with_tasks_meta(),
-    config=ConfigSchemaMeta(allow_cycles=True),
-)
-
-ProjectCreateSchema = rebuild_schema(
-    ProjectReadSchema,
-    exclude_readonly=True,
-)
+from fastapi_ronin import decorators
 
 
-TaskReadSchema = build_schema(Task, meta=get_task_with_project_meta())
-TaskCreateSchema = rebuild_schema(TaskReadSchema, exclude_readonly=True)
+class BaseModelSchema(PydanticModel):
+    id: int
+    created_at: datetime
+    updated_at: datetime
 
 
-if TYPE_CHECKING:
-    ProjectReadSchema = type('ProjectCreateSchema', (Project, PydanticModel), {})
-    ProjectCreateSchema = type('ProjectCreateSchema', (Project, PydanticModel), {})
+# -------------------------------- Company schemas -------------------------------- #
 
-    TaskReadSchema = type('TaskReadSchema', (Task, PydanticModel), {})
-    TaskCreateSchema = type('TaskCreateSchema', (Task, PydanticModel), {})
+
+@decorators.schema(model=Company)
+class CompanySchema(BaseModelSchema):
+    name: str
+
+
+# -------------------------------- Project schemas -------------------------------- #
+
+
+@decorators.schema(model=Project)
+class ProjectCreateSchema(PydanticModel):
+    name: str
+    company_id: int
+
+
+@decorators.schema(model=Project)
+class ProjectReadSchema(BaseModelSchema, ProjectCreateSchema):
+    company: CompanySchema
+
+
+# -------------------------------- Task schemas -------------------------------- #
+
+
+@decorators.schema(model=Task)
+class TaskCreateSchema(PydanticModel):
+    name: str
+    project_id: int
+
+
+@decorators.schema(model=Task)
+class TaskReadSchema(BaseModelSchema, TaskCreateSchema):
+    name: str
+    project_id: int
+    project: ProjectReadSchema

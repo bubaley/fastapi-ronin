@@ -7,7 +7,6 @@ and catch common errors early.
 
 from typing import Any, Type
 
-from tortoise.contrib.pydantic import PydanticModel
 from tortoise.models import Model
 
 
@@ -26,52 +25,17 @@ def validate_viewset_config(cls: Type[Any]) -> None:
     """
     class_name = cls.__name__
 
-    # Check if model is provided
-    if not hasattr(cls, 'model') or cls.model is None:
-        raise ViewSetConfigError(f"{class_name} must define a 'model' attribute. Example: model = User")
-
     # Check if model is a Tortoise model
-    if not issubclass(cls.model, Model):
+    if getattr(cls, 'model', None) and not issubclass(cls.model, Model):
         raise ViewSetConfigError(
             f'{class_name}.model must be a Tortoise ORM model class, got {type(cls.model).__name__}'
         )
-
-    # Check schemas
-    _validate_schemas(cls, class_name)
 
     # Check pagination
     _validate_pagination(cls, class_name)
 
     # Check response wrappers
     _validate_response_wrappers(cls, class_name)
-
-
-def _validate_schemas(cls: Type[Any], class_name: str) -> None:
-    """Validate schema configuration."""
-    # Check if at least read_schema is provided
-    if not hasattr(cls, 'read_schema') or cls.read_schema is None:
-        raise ViewSetConfigError(
-            f"{class_name} must define at least 'read_schema'. "
-            f'You can use: read_schema = pydantic_model_creator(YourModel)'
-        )
-
-    # Validate schema types if they exist
-    schema_fields = ['read_schema', 'many_read_schema', 'create_schema', 'update_schema']
-
-    for field_name in schema_fields:
-        schema = getattr(cls, field_name, None)
-        if schema is not None:
-            try:
-                # Check if it's a valid Pydantic model
-                if not issubclass(schema, PydanticModel):
-                    raise ViewSetConfigError(
-                        f'{class_name}.{field_name} must be a Pydantic model class, got {type(schema).__name__}'
-                    )
-            except TypeError:
-                # issubclass can raise TypeError for non-class objects
-                raise ViewSetConfigError(
-                    f'{class_name}.{field_name} must be a Pydantic model class, got {type(schema).__name__}'
-                )
 
 
 def _validate_pagination(cls: Type[Any], class_name: str) -> None:

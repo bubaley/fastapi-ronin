@@ -27,6 +27,16 @@ def register_action_route(viewset: 'GenericViewSet', method: Callable):
     action_name = method._action_name or method.__name__
     action_response_model = method._action_response_model
     action_kwargs = getattr(method, '_action_kwargs', {})
+
+    # Get original method signature (used for both return annotation and parameters)
+    original_sig = inspect.signature(method)
+
+    # If response_model is not explicitly set, try to extract it from return annotation
+    if action_response_model is None:
+        return_annotation = original_sig.return_annotation
+        if return_annotation != inspect.Signature.empty and return_annotation is not None:
+            action_response_model = return_annotation
+
     path = build_route_path(viewset, action_name, is_detail, action_path)
 
     # Remove existing routes with same name/path
@@ -43,8 +53,7 @@ def register_action_route(viewset: 'GenericViewSet', method: Callable):
     for route in routes_to_remove:
         viewset.router.routes.remove(route)
 
-    # Get original method signature and remove 'self'
-    original_sig = inspect.signature(method)
+    # Get parameters from original method signature and remove 'self'
     params = list(original_sig.parameters.values())[1:]  # Skip 'self'
 
     # Check if 'request' parameter exists in original method

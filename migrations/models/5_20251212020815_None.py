@@ -8,7 +8,8 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
     "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "name" VARCHAR(255) NOT NULL,
-    "full_name" TEXT
+    "full_name" TEXT,
+    "status" VARCHAR(255) NOT NULL DEFAULT 'active' /* ACTIVE: active\nINACTIVE: inactive */
 );
 CREATE TABLE IF NOT EXISTS "project" (
     "id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
