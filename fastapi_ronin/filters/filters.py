@@ -12,9 +12,10 @@ from fastapi_ronin.filters.lookups import ALLOWED_LOOKUPS_BY_TYPE, LOOKUP_EXPRES
 
 
 @dataclass
-class ParameterDefinition:
+class Parameter:
     param_name: str
     field_name: str
+    view_name: str
     lookup: str
     negate: bool
     filter: 'Filter'
@@ -35,6 +36,7 @@ class Filter:
         default: Any = None,
         default_lookup: Optional[str] = None,
         description: Optional[str] = None,
+        method: Optional[str] = None,
         _field_attrs: Optional[Dict[str, Any]] = None,
         _field_type: Optional[Type] = None,
         **kwargs,
@@ -49,6 +51,7 @@ class Filter:
         self.lookups = lookups or [self.default_lookup or 'exact']
         self.required = required
         self.exclude = exclude
+        self.method = method
         self.field_attrs = {
             'description': description,
             'default': default or ... if (self.required and len(self.lookups) == 1) else None,
@@ -76,17 +79,18 @@ class Filter:
             if token not in self.lookups:
                 raise ValueError(f"default_lookup '{self.default_lookup}' not in lookups {self.lookups}")
 
-    def get_param_definitions(self) -> List[ParameterDefinition]:
-        defs: List[ParameterDefinition] = []
+    def get_param_definitions(self) -> List[Parameter]:
+        defs: List[Parameter] = []
         for lookup in self.lookups:
             display_token = f'not_{lookup}' if self.exclude else lookup
             annotation = LOOKUP_TYPES.get(lookup, self.field_type)
             param_name, negate_flag = self._resolve_param_name(lookup, display_token)
-            param_def = ParameterDefinition(
+            param_def = Parameter(
                 param_name=param_name,
                 negate=negate_flag,
                 annotation=Optional[annotation],  # type:ignore
                 filter=self,
+                view_name=self.view_name,
                 field_attrs=self.field_attrs,
                 field_name=self.field_name,
                 lookup=lookup,
@@ -153,7 +157,7 @@ class FilterSetMeta(Type):
         if not isinstance(filters, list):
             raise ValueError('fields must be a list of Filter objects')
 
-        param_map: Dict[str, ParameterDefinition] = {}
+        param_map: Dict[str, Parameter] = {}
         for f in filters:
             if not isinstance(f, Filter):
                 raise ValueError('All elements of fields must be Filter instances')
@@ -181,7 +185,7 @@ class FilterSet(metaclass=FilterSetMeta):
 
     @classmethod
     def get_build(cls):
-        param_map: Dict[str, ParameterDefinition] = getattr(cls, '_param_map', {})
+        param_map: Dict[str, Parameter] = getattr(cls, '_param_map', {})
 
         def build(**kwargs):
             data = {k: v for k, v in kwargs.items() if v is not None}
@@ -201,19 +205,30 @@ class FilterSet(metaclass=FilterSetMeta):
         return build
 
     def filter_queryset(self, queryset: QuerySet) -> QuerySet:
-        param_map: Dict[str, ParameterDefinition] = getattr(self, '_param_map', {})
+        param_map: Dict[str, Parameter] = getattr(self, '_param_map', {})
 
         for pname, raw_value in self.data.items():
-            info: Optional[ParameterDefinition] = param_map.get(pname)
-            if not info or raw_value is None:
+            parameter: Optional[Parameter] = param_map.get(pname)
+            if not parameter or raw_value is None:
                 continue
 
-            processed = info.filter._process_value(raw_value, info.lookup)
+            processed = parameter.filter._process_value(raw_value, parameter.lookup)
             if processed is None:
                 continue
 
-            kwargs = LOOKUP_EXPRESSIONS[info.lookup](info.field_name, processed)
-            queryset = queryset.exclude(**kwargs) if info.negate else queryset.filter(**kwargs)
+            if parameter.filter.method:
+                method = getattr(self, parameter.filter.method, None)
+                if method and callable(method):
+                    result = method(queryset=queryset, value=processed, parameter=parameter)
+                    if isinstance(result, QuerySet):
+                        queryset = result
+            else:
+                queryset = self.filter_by_parameter(queryset, processed, parameter)
+        return queryset
+
+    def filter_by_parameter(self, queryset: QuerySet, value: Any, parameter: Parameter) -> QuerySet:
+        kwargs = LOOKUP_EXPRESSIONS[parameter.lookup](parameter.field_name, value)
+        queryset = queryset.exclude(**kwargs) if parameter.negate else queryset.filter(**kwargs)
         return queryset
 
 
