@@ -86,8 +86,6 @@ class Company(Model):
 
 
 # Schemas
-
-
 @schema(model=Company)
 class CompanyCreateSchema(PydanticModel):
     name: str
