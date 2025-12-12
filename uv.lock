@@ -287,7 +287,7 @@ dev = [
     { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pydantic-settings", specifier = ">=2.10.1" },
     { name = "pytest", specifier = ">=9.0.1" },
-    { name = "redis", specifier = ">=7.1.0" },
+    { name = "redis", specifier = ">=5.0.0" },
     { name = "ruff", specifier = ">=0.12.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.35.0" },
 ]
