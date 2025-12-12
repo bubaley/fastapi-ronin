@@ -47,5 +47,4 @@ class TaskCreateSchema(PydanticModel):
 @decorators.schema(model=Task)
 class TaskReadSchema(BaseModelSchema, TaskCreateSchema):
     name: str
-    project_id: int
     project: ProjectReadSchema
