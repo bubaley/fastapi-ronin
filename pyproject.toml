@@ -5,7 +5,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "fastapi-ronin"
-version = "0.4.0"
+version = "0.4.1"
 description = "FastAPI Ronin is a library for building FastAPI applications with a Django REST Framework-inspired architecture."
 readme = "README.md"
 keywords = [
