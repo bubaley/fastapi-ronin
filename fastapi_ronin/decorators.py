@@ -8,7 +8,6 @@ from typing import Any, Callable, Optional, Type
 
 from fastapi import APIRouter
 from tortoise import Model
-from tortoise.contrib.pydantic import PydanticModel
 
 from fastapi_ronin.viewsets import GenericViewSet
 
@@ -65,7 +64,7 @@ def action(
 def schema(model: Type[Model], **kwargs):
     """Decorator to mark a viewset method as a routable action."""
 
-    def decorator(cls: Type[PydanticModel]) -> Type[PydanticModel]:
+    def decorator(cls):
         cls.model_config['orig_model'] = model  # type: ignore
 
         return cls
