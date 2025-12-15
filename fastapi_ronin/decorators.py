@@ -64,9 +64,21 @@ def action(
 def schema(model: Type[Model], **kwargs):
     """Decorator to mark a viewset method as a routable action."""
 
+    def _get_all_annotations(cls):
+        annotations = {}
+        for base in reversed(cls.__mro__):
+            annotations.update(getattr(base, '__annotations__', {}))
+        return annotations
+
     def decorator(cls):
         cls.model_config['orig_model'] = model  # type: ignore
 
+        # Explicitly merge annotations from base classes.
+        # Tortoise reads cls.__annotations__ directly and does not account for inheritance,
+        # so we flatten the MRO annotations into the current class to make inherited
+        # schema fields visible to Tortoise.
+        # tortoise/contrib/pydantic/base.py, line 29
+        cls.__annotations__ = _get_all_annotations(cls)
         return cls
 
     return decorator
