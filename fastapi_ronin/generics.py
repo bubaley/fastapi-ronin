@@ -18,6 +18,7 @@ from fastapi_ronin.permissions import BasePermission, check_permissions
 from fastapi_ronin.routes import TrailingSlashMode, register_action_route, sort_routes_by_specificity
 from fastapi_ronin.state import BaseStateManager
 from fastapi_ronin.types import ModelType
+from fastapi_ronin.utils.coroutine_utils import await_if_coroutine
 from fastapi_ronin.wrappers import PaginatedResponseWrapper, ResponseWrapper
 
 
@@ -108,23 +109,24 @@ class GenericViewSet(Generic[ModelType]):
 
     async def check_permissions(self, obj: Any = None) -> None:
         """Check permissions for the current request."""
-        await check_permissions(self.get_permissions(), self.request, self, obj)
+        permissions = await await_if_coroutine(self.get_permissions())
+        await check_permissions(permissions, self.request, self, obj)
 
-    def get_permissions(self) -> List[BasePermission]:
+    async def get_permissions(self) -> List[BasePermission]:
         """Get permission instances for this viewset."""
         return [permission() for permission in self.permission_classes]
 
-    def get_queryset(self) -> QuerySet[ModelType]:
+    async def get_queryset(self) -> QuerySet[ModelType]:
         """Get base queryset for the model."""
         if not self.model:
             raise ValueError(f'Model must be provided for {self.__class__.__name__}')
         return self.model.all()
 
-    def get_filter_class(self) -> Optional[Type['FilterSet']]:
+    def get_filter_class(self) -> Type['FilterSet']:
         """Get filter class for this viewset."""
         return self.filterset_class
 
-    def filter_queryset(
+    async def filter_queryset(
         self, queryset: QuerySet[ModelType], filter_instance: Optional['FilterSet'] = None
     ) -> QuerySet[ModelType]:
         """Apply filters to the queryset."""
@@ -134,7 +136,7 @@ class GenericViewSet(Generic[ModelType]):
 
     async def get_object(self, value: Any) -> ModelType:
         """Get single object by ID with permission check."""
-        queryset = self.get_queryset()
+        queryset = await await_if_coroutine(self.get_queryset())
         obj = await queryset.get_or_none(**{self.lookup_field: value})
         if not obj:
             raise HTTPException(status_code=404, detail='Not found')

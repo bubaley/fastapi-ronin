@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
+from app.core.auth import get_current_user
 from app.core.database import register_database
 from app.domains.company.views import router as company_router
 from app.domains.project.views import analytics_router, task_router
@@ -9,7 +10,10 @@ app = FastAPI(
     title='FastAPI Ronin',
     version='0.0.0',
     description='FastAPI Ronin is a library for building FastAPI applications with Django REST Framework-inspired ViewSets and utilities',
+    dependencies=[Depends(get_current_user)],
 )
+
+
 register_database(app)
 
 app.include_router(company_router)

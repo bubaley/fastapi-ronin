@@ -4,7 +4,7 @@ from tortoise.contrib.pydantic import PydanticModel
 
 from app.domains.company.models import Company
 from app.domains.project.models import Project, Task
-from fastapi_ronin import decorators
+from fastapi_ronin.decorators import schema
 
 
 class BaseModelSchema(PydanticModel):
@@ -16,7 +16,7 @@ class BaseModelSchema(PydanticModel):
 # -------------------------------- Company schemas -------------------------------- #
 
 
-@decorators.schema(model=Company)
+@schema(model=Company)
 class CompanySchema(BaseModelSchema):
     name: str
 
@@ -24,13 +24,13 @@ class CompanySchema(BaseModelSchema):
 # -------------------------------- Project schemas -------------------------------- #
 
 
-@decorators.schema(model=Project)
+@schema(model=Project)
 class ProjectCreateSchema(PydanticModel):
     name: str
     company_id: int
 
 
-@decorators.schema(model=Project)
+@schema(model=Project)
 class ProjectReadSchema(BaseModelSchema, ProjectCreateSchema):
     company: CompanySchema
 
@@ -38,13 +38,13 @@ class ProjectReadSchema(BaseModelSchema, ProjectCreateSchema):
 # -------------------------------- Task schemas -------------------------------- #
 
 
-@decorators.schema(model=Task)
+@schema(model=Task)
 class TaskCreateSchema(PydanticModel):
     name: str
     project_id: int
 
 
-@decorators.schema(model=Task)
+@schema(model=Task)
 class TaskReadSchema(BaseModelSchema, TaskCreateSchema):
     name: str
     project: ProjectReadSchema

@@ -14,6 +14,7 @@ from fastapi_ronin.lookups import BaseLookup
 from fastapi_ronin.pagination import DisabledPagination, Pagination
 from fastapi_ronin.routes import add_wrapped_route, build_route_path
 from fastapi_ronin.types import ModelType
+from fastapi_ronin.utils.coroutine_utils import await_if_coroutine
 
 if TYPE_CHECKING:
     from fastapi_ronin.generics import GenericViewSet
@@ -27,12 +28,14 @@ class ListMixin(Generic[ModelType]):
         self.add_list_route()  # type: ignore
 
     def add_list_route(self: 'GenericViewSet'):  # type: ignore
+        filter_class = self.get_filter_class()
+
         async def list_endpoint(
             pagination: Pagination[ModelType] = Depends(self.pagination.build),
-            filters=Depends(self.filterset_class.get_build()),
+            filters=Depends(filter_class.get_build()),
         ):
-            queryset = self.get_queryset()
-            queryset = self.filter_queryset(queryset, filters)
+            queryset = await await_if_coroutine(self.get_queryset())
+            queryset = await await_if_coroutine(self.filter_queryset(queryset, filters))
 
             if not isinstance(pagination, DisabledPagination):
                 return await self.get_paginated_response(queryset=queryset, pagination=pagination)
