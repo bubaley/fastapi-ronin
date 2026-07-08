@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Literal
 
 from fastapi import Request
 from fastapi.routing import APIRoute
+from starlette.routing import BaseRoute
 
 if TYPE_CHECKING:
     from .generics import GenericViewSet
@@ -21,11 +22,11 @@ def register_action_route(viewset: 'GenericViewSet', method: Callable):
     Register a single action method as a route.
     """
     # Get action metadata
-    action_methods = method._action_methods
-    is_detail = method._action_detail
-    action_path = method._action_path
-    action_name = method._action_name or method.__name__
-    action_response_model = method._action_response_model
+    action_methods = getattr(method, '_action_methods', [])
+    is_detail = getattr(method, '_action_detail', False)
+    action_path = getattr(method, '_action_path', None)
+    action_name = getattr(method, '_action_name', None) or getattr(method, '__name__', '')
+    action_response_model = getattr(method, '_action_response_model', None)
     action_kwargs = getattr(method, '_action_kwargs', {})
 
     # Get original method signature (used for both return annotation and parameters)
@@ -90,9 +91,9 @@ def register_action_route(viewset: 'GenericViewSet', method: Callable):
         return await method(viewset, **method_kwargs)
 
     # Set correct signature and metadata for FastAPI documentation
-    action_endpoint.__signature__ = new_signature
-    action_endpoint.__name__ = method.__name__
-    action_endpoint.__doc__ = method.__doc__
+    setattr(action_endpoint, '__signature__', new_signature)
+    setattr(action_endpoint, '__name__', getattr(method, '__name__', ''))
+    setattr(action_endpoint, '__doc__', method.__doc__)
 
     # Copy annotations from original method, remove 'self', add Request if needed
     annotations = getattr(method, '__annotations__', {}).copy()
@@ -157,9 +158,9 @@ def add_wrapped_route(
             return await endpoint(*args, **filtered_kwargs)
 
         # Set the new signature and metadata
-        request_injected_endpoint.__signature__ = new_signature
-        request_injected_endpoint.__name__ = endpoint.__name__
-        request_injected_endpoint.__doc__ = endpoint.__doc__
+        setattr(request_injected_endpoint, '__signature__', new_signature)
+        setattr(request_injected_endpoint, '__name__', endpoint.__name__)
+        setattr(request_injected_endpoint, '__doc__', endpoint.__doc__)
 
         # Copy annotations and add Request
         annotations = getattr(endpoint, '__annotations__', {}).copy()
@@ -190,7 +191,7 @@ def add_wrapped_route(
     )
 
 
-def sort_routes_by_specificity(routes: list[APIRoute]) -> list[APIRoute]:
+def sort_routes_by_specificity(routes: list[BaseRoute]) -> list[BaseRoute]:
     """
     Sort routes by specificity to ensure proper route matching.
     """
@@ -277,10 +278,10 @@ def _create_endpoint_wrapper(
             state._clear_state()
 
     # Preserve original function metadata
-    wrapped_endpoint.__signature__ = original_sig
-    wrapped_endpoint.__name__ = endpoint.__name__
-    wrapped_endpoint.__doc__ = endpoint.__doc__
-    wrapped_endpoint.__annotations__ = getattr(endpoint, '__annotations__', {})
+    setattr(wrapped_endpoint, '__signature__', original_sig)
+    setattr(wrapped_endpoint, '__name__', getattr(endpoint, '__name__', ''))
+    setattr(wrapped_endpoint, '__doc__', getattr(endpoint, '__doc__', ''))
+    setattr(wrapped_endpoint, '__annotations__', getattr(endpoint, '__annotations__', {}))
 
     return wrapped_endpoint
 

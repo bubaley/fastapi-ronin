@@ -20,7 +20,7 @@ class Pagination(ABC, BaseModel, Generic[ModelType]):
 
     @classmethod
     @abstractmethod
-    def build(cls, **kwargs) -> 'Pagination':
+    def build(cls, *args, **kwargs) -> 'Pagination':
         """Create pagination instance from query parameters."""
         pass
 
@@ -39,6 +39,8 @@ class Pagination(ABC, BaseModel, Generic[ModelType]):
 
 class DisabledPagination(Pagination[ModelType]):
     """Pagination class that disables pagination."""
+
+    pagination_disabled: bool = True
 
     @classmethod
     def build(cls) -> 'DisabledPagination':

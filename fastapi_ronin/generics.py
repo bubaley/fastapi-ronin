@@ -168,9 +168,9 @@ class GenericViewSet(Generic[ModelType]):
             raise ValueError(f'Read schema must be provided for {self.__class__.__name__}')
         if self.list_wrapper:
             if self.list_wrapper and issubclass(self.list_wrapper, ResponseWrapper):
-                return self.list_wrapper[self.many_read_schema]  # type: ignore
+                return self.list_wrapper[self.many_read_schema]
             elif self.list_wrapper and issubclass(self.list_wrapper, PaginatedResponseWrapper):
-                return self.list_wrapper[self.many_read_schema, self.pagination]  # type: ignore
+                return self.list_wrapper[self.many_read_schema, self.pagination]
         return list[self.many_read_schema]
 
     def get_sigle_response(self, data: PydanticModel):
@@ -189,7 +189,7 @@ class GenericViewSet(Generic[ModelType]):
             raise ValueError(f'Read schema must be provided for {self.__class__.__name__}')
         if self.single_wrapper:
             if self.single_wrapper and issubclass(self.single_wrapper, ResponseWrapper):
-                return self.single_wrapper[self.read_schema]  # type: ignore
+                return self.single_wrapper[self.read_schema]
         return self.read_schema
 
     async def get_paginated_response(
@@ -232,5 +232,5 @@ class GenericViewSet(Generic[ModelType]):
     def _finalize_routes(self) -> None:
         """Finalize routes after all mixins have added their routes."""
         if not self.__routes_added:
-            setattr(self.router, 'routes', sort_routes_by_specificity(self.router.routes))  # type: ignore
+            setattr(self.router, 'routes', sort_routes_by_specificity(self.router.routes))
             self.__routes_added = True

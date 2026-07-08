@@ -15,6 +15,7 @@ from fastapi_ronin.pagination import DisabledPagination, Pagination
 from fastapi_ronin.routes import add_wrapped_route, build_route_path
 from fastapi_ronin.types import ModelType
 from fastapi_ronin.utils.coroutine_utils import await_if_coroutine
+from fastapi_ronin.wrappers import PaginatedResponseWrapper
 
 if TYPE_CHECKING:
     from fastapi_ronin.generics import GenericViewSet
@@ -25,9 +26,9 @@ class ListMixin(Generic[ModelType]):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_list_route()  # type: ignore
+        self.add_list_route()  # ty: ignore[invalid-argument-type]
 
-    def add_list_route(self: 'GenericViewSet'):  # type: ignore
+    def add_list_route(self: 'GenericViewSet[ModelType] & ListMixin[ModelType]'):
         filter_class = self.get_filter_class()
 
         async def list_endpoint(
@@ -37,9 +38,11 @@ class ListMixin(Generic[ModelType]):
             queryset = await await_if_coroutine(self.get_queryset())
             queryset = await await_if_coroutine(self.filter_queryset(queryset, filters))
 
-            if not isinstance(pagination, DisabledPagination):
+            if self.list_wrapper and issubclass(self.list_wrapper, PaginatedResponseWrapper):
                 return await self.get_paginated_response(queryset=queryset, pagination=pagination)
 
+            if not isinstance(pagination, DisabledPagination):
+                queryset = pagination.paginate(queryset)
             results = await self.many_read_schema.from_queryset(queryset)  # type: ignore
             return self.get_list_response(results)
 
@@ -58,12 +61,14 @@ class RetrieveMixin(Generic[ModelType]):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_retrieve_route()  # type: ignore
+        self.add_retrieve_route()  # ty: ignore[invalid-argument-type]
 
-    def add_retrieve_route(self: 'GenericViewSet'):  # type: ignore
+    def add_retrieve_route(self: 'GenericViewSet[ModelType] & RetrieveMixin[ModelType]'):
         async def retrieve_endpoint(lookup: BaseLookup = Depends(self.lookup_class.build)):
             obj: ModelType = await self.get_object(lookup.value)
-            result = await self.read_schema.from_tortoise_orm(obj)  # type: ignore
+            if not self.read_schema:
+                raise ValueError('Read schema is not set')
+            result = await self.read_schema.from_tortoise_orm(obj)
             return self.get_sigle_response(result)
 
         add_wrapped_route(
@@ -81,10 +86,13 @@ class CreateMixin(Generic[ModelType]):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_create_route()  # type: ignore
+        self.add_create_route()  # ty: ignore[invalid-argument-type]
 
-    def add_create_route(self: 'GenericViewSet'):  # type: ignore
-        async def create_endpoint(data: self.create_schema):  # type: ignore
+    def add_create_route(self: 'GenericViewSet[ModelType] & CreateMixin[ModelType]'):
+        if not self.create_schema:
+            raise ValueError('Create schema is not set')
+
+        async def create_endpoint(data: self.create_schema):
             data = await self.validate_data(data)
             self.state.validated_data = data
             if isinstance(data, BaseModel):
@@ -92,9 +100,11 @@ class CreateMixin(Generic[ModelType]):
             obj: ModelType = self.model()
             obj.update_from_dict(data)
             await self.before_save(obj)
-            obj = await self.perform_create(obj)  # type: ignore
+            obj = await self.perform_create(obj)
             await self.after_save(obj)
-            result = await self.read_schema.from_tortoise_orm(obj)  # type: ignore
+            if not self.read_schema:
+                raise ValueError('Read schema is not set')
+            result = await self.read_schema.from_tortoise_orm(obj)
             return self.get_sigle_response(result)
 
         add_wrapped_route(
@@ -107,7 +117,7 @@ class CreateMixin(Generic[ModelType]):
             status_code=201,
         )
 
-    async def perform_create(self: 'GenericViewSet', obj: ModelType) -> ModelType:  # type: ignore
+    async def perform_create(self: 'GenericViewSet', obj: ModelType) -> ModelType:
         """Perform the actual object creation."""
         return await self.perform_save(obj)
 
@@ -117,10 +127,13 @@ class UpdateMixin(Generic[ModelType]):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_update_route()  # type: ignore
+        self.add_update_route()  # ty: ignore[invalid-argument-type]
 
-    def add_update_route(self: 'GenericViewSet'):  # type: ignore
-        async def update_endpoint(data: self.update_schema, lookup: BaseLookup = Depends(self.lookup_class.build)):  # type: ignore
+    def add_update_route(self: 'GenericViewSet[ModelType] & UpdateMixin[ModelType]'):
+        if not self.update_schema:
+            raise ValueError('Update schema is not set')
+
+        async def update_endpoint(data: self.update_schema, lookup: BaseLookup = Depends(self.lookup_class.build)):
             obj: ModelType = await self.get_object(lookup.value)
 
             data = await self.validate_data(data)
@@ -130,9 +143,11 @@ class UpdateMixin(Generic[ModelType]):
             obj.update_from_dict(data)
 
             await self.before_save(obj)
-            obj = await self.perform_update(obj)  # type: ignore
+            obj = await self.perform_update(obj)
             await self.after_save(obj)
-            result = await self.read_schema.from_tortoise_orm(obj)  # type: ignore
+            if not self.read_schema:
+                raise ValueError('Read schema is not set')
+            result = await self.read_schema.from_tortoise_orm(obj)
             return self.get_sigle_response(result)
 
         add_wrapped_route(
@@ -144,7 +159,7 @@ class UpdateMixin(Generic[ModelType]):
             response_model=self.get_single_response_model(),
         )
 
-    async def perform_update(self: 'GenericViewSet', obj: ModelType) -> ModelType:  # type: ignore
+    async def perform_update(self: 'GenericViewSet', obj: ModelType) -> ModelType:
         """Perform the actual object update."""
         return await self.perform_save(obj)
 
@@ -154,12 +169,12 @@ class DestroyMixin(Generic[ModelType]):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_destroy_route()  # type: ignore
+        self.add_destroy_route()  # ty: ignore[invalid-argument-type]
 
-    def add_destroy_route(self: 'GenericViewSet'):  # type: ignore
+    def add_destroy_route(self: 'GenericViewSet[ModelType] & DestroyMixin[ModelType]'):
         async def destroy_endpoint(lookup: BaseLookup = Depends(self.lookup_class.build)):
             obj = await self.get_object(lookup.value)
-            await self.perform_destroy(obj)  # type: ignore
+            await self.perform_destroy(obj)
 
         add_wrapped_route(
             viewset=self,

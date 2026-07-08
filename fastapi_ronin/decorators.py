@@ -48,13 +48,13 @@ def action(
 
     def decorator(func: Callable) -> Callable:
         # Store action metadata on the function
-        func._is_action = True
-        func._action_methods = [method.upper() for method in methods]
-        func._action_detail = detail
-        func._action_path = path
-        func._action_name = name
-        func._action_response_model = response_model
-        func._action_kwargs = kwargs
+        setattr(func, '_is_action', True)
+        setattr(func, '_action_methods', [method.upper() for method in methods])
+        setattr(func, '_action_detail', detail)
+        setattr(func, '_action_path', path)
+        setattr(func, '_action_name', name)
+        setattr(func, '_action_response_model', response_model)
+        setattr(func, '_action_kwargs', kwargs)
 
         return func
 
@@ -71,7 +71,9 @@ def schema(model: Type[Model], **kwargs):
         return annotations
 
     def decorator(cls):
-        cls.model_config['orig_model'] = model  # type: ignore
+        _model_config = getattr(cls, 'model_config', {})
+        if isinstance(_model_config, dict):
+            _model_config['orig_model'] = model
 
         # Explicitly merge annotations from base classes.
         # Tortoise reads cls.__annotations__ directly and does not account for inheritance,

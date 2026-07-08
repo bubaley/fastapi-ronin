@@ -4,9 +4,9 @@ from typing import Any, Union
 from .base import BaseCacheClient
 
 try:
-    from redis.asyncio import Redis  # type: ignore
+    from redis.asyncio import Redis
 except ImportError:
-    Redis = None
+    Redis = None  # type: ignore
 
 
 class RedisCacheClient(BaseCacheClient):
@@ -14,7 +14,7 @@ class RedisCacheClient(BaseCacheClient):
         super().__init__(**kwargs)
         if Redis is None:
             raise ImportError('Redis is not installed. Install it with: pip install fastapi-ronin[redis]')
-        self.redis = Redis.from_url(url, encoding='utf-8', decode_responses=True)
+        self.redis: Redis = Redis.from_url(url, encoding='utf-8', decode_responses=True)
 
     async def _get(self, key: str) -> Any:
         raw = await self.redis.get(key)

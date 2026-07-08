@@ -9,6 +9,7 @@ from .filters import (
     FilterSet,
     FloatFilter,
     IntegerFilter,
+    OrderingFilter,
     Parameter,
     UUIDFilter,
 )
@@ -23,6 +24,7 @@ __all__ = [
     'FilterSet',
     'FloatFilter',
     'IntegerFilter',
+    'OrderingFilter',
     'Parameter',
     'UUIDFilter',
     'ChoiceFilter',

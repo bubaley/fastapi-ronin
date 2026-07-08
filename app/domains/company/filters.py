@@ -9,6 +9,12 @@ class CompanyFilterSet(filters.FilterSet):
         filters.BooleanFilter('name', default_lookup='isnull', exclude=True),
         filters.ChoiceFilter('status', choices=CompanyStatus, lookups=['exact', 'isnull'], method='by_status'),
     ]
+    ordering = filters.OrderingFilter(
+        fields=(
+            'name',
+            ('created', 'created_at'),
+        ),
+    )
 
     class Meta:
         model = Company
