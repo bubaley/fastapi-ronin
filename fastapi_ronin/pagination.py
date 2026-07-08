@@ -15,6 +15,10 @@ from tortoise.queryset import QuerySet
 from fastapi_ronin.types import ModelType
 
 
+def kek(lol):
+    return lol
+
+
 class Pagination(ABC, BaseModel, Generic[ModelType]):
     """Abstract base class for pagination implementations."""
 

@@ -1,68 +1,114 @@
 ---
 title: FastAPI Ronin Tutorial — Quick Start Guide to Building REST APIs
-description: Learn how to build REST APIs quickly with FastAPI Ronin. Follow this step-by-step tutorial to use ViewSets, permissions, and automatic CRUD operations.
-keywords: FastAPI tutorial, FastAPI Ronin tutorial, REST API guide, Python REST API tutorial, Django REST Framework patterns, CRUD API FastAPI, ViewSets FastAPI, Python backend development, API development tutorial
+description: Learn how to build a scalable FastAPI Ronin project in minutes with ViewSets, explicit schemas, filters, pagination, wrappers, cache, and Tortoise ORM.
+keywords: FastAPI tutorial, FastAPI Ronin tutorial, REST API guide, Python REST API tutorial, Django REST Framework patterns, CRUD API FastAPI, ViewSets FastAPI, Python backend development
 ---
 
-# FastAPI Ronin Quick Start: Build REST APIs in Minutes
+# FastAPI Ronin Quick Start: Build a Scalable API in Minutes
 
-Get started with FastAPI Ronin and build your first REST API fast! This step-by-step guide shows how to install FastAPI Ronin and structure your project using familiar patterns like ViewSets, permissions, and automatic CRUD operations.
+The root `main.py` shows a complete app in one file. This guide takes the same
+ideas and turns them into a project layout you can keep growing: shared `core`
+modules, domain modules, explicit schemas, filters, ViewSets, wrappers, cache,
+and Tortoise ORM.
+
+!!! tip "Start small, keep the shape"
+    You can begin with one domain and one ViewSet. The structure below pays off
+    when you add a second or third domain because every concern already has a
+    clear place.
 
 ## 📦 Installation
 
-Install FastAPI Ronin using pip:
+Create a project and install the core dependencies:
 
 ```bash
-uv add fastapi-ronin
+mkdir project-api
+cd project-api
+uv init
+uv add fastapi-ronin fastapi tortoise-orm uvicorn pydantic-settings
 ```
 
-You'll also need FastAPI and an ORM. FastAPI Ronin works great with Tortoise ORM:
+For Redis-backed cache:
 
 ```bash
-uv add fastapi tortoise-orm
+uv add "fastapi-ronin[redis]"
 ```
 
 ## 🏗️ Recommended Project Structure
 
-Before diving into code, we **recommend using a domains architecture** for your FastAPI projects. This approach organizes your code by business domains rather than technical layers, making it more maintainable and scalable.
+Use a domain-oriented layout. Business concepts live in `app/domains`, while
+shared infrastructure lives in `app/core`.
 
-Here's the recommended structure:
-
-```
-your_project/
-├── app/
-│   ├── core/                 # Shared utilities and base classes
-│   │   ├── models.py         # BaseModel and common fields
-│   │   ├── database.py       # Database configuration
-│   │   ├── viewsets.py       # The main viewsets for the entire application
-│   │   └── settings.py       # Application settings
-│   ├── domains/              # Business domains
-│   │   └── project/
-│   │       ├── models.py     # Business models
-│   │       ├── meta.py       # Schema metadata
-│   │       ├── schemas.py    # Pydantic schemas
-│   │       └── views.py      # API endpoints
-│   └── main.py               # FastAPI application setup
+```text
+app/
+├── core/
+│   ├── database.py       # Tortoise configuration
+│   ├── models.py         # Base model
+│   ├── settings.py       # Application settings
+│   └── viewsets.py       # Shared ViewSet defaults
+├── domains/
+│   └── project/
+│       ├── filters.py    # Query parameters for this domain
+│       ├── models.py     # Project and Task models
+│       ├── schemas.py    # Explicit Pydantic schemas
+│       └── views.py      # ViewSets and routers
+└── main.py               # FastAPI app setup
 ```
 
-This structure provides:
+Create structure:
 
-- **Clear separation** of business concerns
-- **Easy navigation** and understanding
-- **Better testability** and maintainability
-- **Natural scaling** as your project grows
+```bash
+mkdir -p app/core app/domains/project && \
+touch app/__init__.py app/core/__init__.py app/domains/__init__.py app/domains/project/__init__.py && \
+touch app/core/database.py app/core/models.py app/core/settings.py app/core/viewsets.py && \
+touch app/domains/project/filters.py app/domains/project/models.py app/domains/project/schemas.py app/domains/project/views.py && \
+touch app/main.py
+```
 
 ## ⚙️ Project Setup
 
-Let's build a project management API with related tasks to demonstrate FastAPI Ronin's capabilities with linked models.
+We will build a small project management API with projects and tasks:
 
-### 1. Create Base Model
+- projects can be listed, created, updated, retrieved, and soft-deleted;
+- tasks belong to projects;
+- list endpoints support filters, ordering, wrappers, and pagination;
+- project detail responses can include tasks;
+- a custom stats action returns task counts;
+- cache is initialized in the FastAPI lifespan.
 
-First, create a base model with common fields:
+### 1. Settings
+
+```python title="app/core/settings.py"
+from pathlib import Path
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+ROOT_ENV_FILE = Path(__file__).resolve().parents[2] / '.env'
+
+
+class Settings(BaseSettings):
+    database_url: str = Field(default='sqlite://db.sqlite3')
+    redis_url: str | None = None
+
+    model_config = SettingsConfigDict(
+        env_file=ROOT_ENV_FILE,
+        env_file_encoding='utf-8',
+        extra='allow',
+    )
+
+
+settings = Settings()
+```
+
+### 2. Base Model
 
 ```python title="app/core/models.py"
+from datetime import datetime
+
 from tortoise import fields
+from tortoise.contrib.pydantic import PydanticModel
 from tortoise.models import Model
+
 
 class BaseModel(Model):
     id = fields.IntField(primary_key=True)
@@ -72,289 +118,360 @@ class BaseModel(Model):
     class Meta:
         abstract = True
 
-BASE_FIELDS = ('id', 'created_at', 'updated_at')
+
+class BaseCreateSchema(PydanticModel):
+    pass
+
+
+class BaseReadSchema(PydanticModel):
+    id: int
+    created_at: datetime
+    updated_at: datetime
 ```
 
-### 2. Basic viewset for easy reuse
+### 3. Database Configuration
+
+```python title="app/core/database.py"
+from fastapi import FastAPI
+from tortoise import Tortoise
+from tortoise.contrib.fastapi import register_tortoise
+
+from app.core.settings import settings
+
+MODELS = [
+    'app.domains.project.models',
+]
+
+TORTOISE_ORM = {
+    'connections': {'default': settings.database_url},
+    'apps': {
+        'models': {
+            'models': MODELS,
+            'default_connection': 'default',
+            'migrations': 'migrations',
+        }
+    },
+}
+
+
+def register_database(app: FastAPI):
+    register_tortoise(
+        app,
+        db_url=settings.database_url,
+        modules={'models': MODELS},
+        add_exception_handlers=True,
+    )
+
+
+Tortoise.init_models(MODELS, 'models')
+```
+
+!!! tip "Why init_models?"
+    Tortoise needs relation metadata before Pydantic schemas are imported. Calling
+    `Tortoise.init_models()` in your database module makes schema imports stable.
+
+### 4. Shared ViewSet Defaults
 
 ```python title="app/core/viewsets.py"
 from fastapi_ronin.pagination import PageNumberPagination
-from fastapi_ronin.viewsets import ModelViewSet
 from fastapi_ronin.types import ModelType
+from fastapi_ronin.viewsets import ModelViewSet
 from fastapi_ronin.wrappers import PaginatedResponseDataWrapper, ResponseDataWrapper
 
 
-class BaseViewSet(ModelViewSet[ModelType]):
+class BaseModelViewSet(ModelViewSet[ModelType]):
     pagination = PageNumberPagination
     list_wrapper = PaginatedResponseDataWrapper
     single_wrapper = ResponseDataWrapper
 ```
 
-### 3. Define Your Models
-
-Create your Tortoise ORM models with ForeignKey relationships:
+### 5. Domain Models
 
 ```python title="app/domains/project/models.py"
 from tortoise import fields
+
 from app.core.models import BaseModel
+
 
 class Project(BaseModel):
     name = fields.CharField(max_length=255)
     description = fields.TextField(null=True)
     active = fields.BooleanField(default=True)
-    # Reverse relation to tasks will be available as 'tasks' automaticly
+    tasks = fields.ReverseRelation['Task']
+
+    class Meta:
+        ordering = ['-created_at']
+
 
 class Task(BaseModel):
     name = fields.CharField(max_length=255)
     description = fields.TextField(null=True)
     completed = fields.BooleanField(default=False)
-    project: fields.ForeignKeyRelation[Project] = fields.ForeignKeyField("models.Project", related_name="tasks")
+    project = fields.ForeignKeyField('models.Project', related_name='tasks')
 ```
 
-### 4. Create Schema Meta Classes
-
-Define which fields to include in your API schemas and how to handle relationships:
-
-```python title="app/domains/project/meta.py"
-from app.core.models import BASE_FIELDS
-from fastapi_ronin.schemas import SchemaMeta, build_schema_meta
-
-
-class ProjectMeta(SchemaMeta):
-    include = (
-        *BASE_FIELDS,
-        "name",
-        "description",
-    )
-
-
-class TaskMeta(SchemaMeta):
-    include = (
-        *BASE_FIELDS,
-        "name",
-        "description",
-        "completed",
-        "project_id",  # Include foreign key ID
-    )
-
-
-# Create meta for nested schemas with relationships
-def get_project_with_tasks_meta():
-    """Project schema with embedded tasks"""
-    return build_schema_meta(
-        ProjectMeta,
-        ("tasks", get_task_with_project_meta()),
-    )
-
-
-def get_task_with_project_meta():
-    """Task schema with embedded project data"""
-    return build_schema_meta(TaskMeta, ("project", ProjectMeta))
-```
-
-### 5. Generate Schemas
-
-Use FastAPI Ronin's schema generation to create Pydantic models for related data:
+### 6. Explicit Schemas
 
 ```python title="app/domains/project/schemas.py"
-from typing import TYPE_CHECKING
+from fastapi_ronin.decorators import schema
 from pydantic import BaseModel
-from tortoise import Tortoise
-from tortoise.contrib.pydantic import PydanticModel
 
-from app.domains.project.meta import (
-    ProjectMeta,
-    get_project_with_tasks_meta,
-    get_task_with_project_meta,
-)
+from app.core.models import BaseCreateSchema, BaseReadSchema
 from app.domains.project.models import Project, Task
-from fastapi_ronin.schemas import ConfigSchemaMeta, build_schema, rebuild_schema
 
-"""
-https://tortoise.github.io/examples/pydantic.html?h=init_models#early-model-init
-Set up models in advance here or place them in database.py (example)
-https://github.com/bubaley/fastapi-ronin/blob/main/app/core/database.py
-"""
-Tortoise.init_models(["app.domains.project.models"], "models")
 
-# Simple project schema
-ProjectReadSchema = build_schema(Project, meta=ProjectMeta)
+@schema(Task)
+class TaskCreateSchema(BaseCreateSchema):
+    name: str
+    description: str | None = None
+    project_id: int
 
-# Detailed project schema with tasks (handles circular references)
-ProjectDetailSchema = build_schema(
-    Project,
-    meta=get_project_with_tasks_meta(),
-    config=ConfigSchemaMeta(allow_cycles=True),  # Handle circular references
-)
 
-# Create schemas (exclude readonly fields)
-ProjectCreateSchema = rebuild_schema(ProjectReadSchema, exclude_readonly=True)
+@schema(Task)
+class TaskReadSchema(TaskCreateSchema, BaseReadSchema):
+    completed: bool
+
+
+@schema(Project)
+class ProjectCreateSchema(BaseCreateSchema):
+    name: str
+    description: str | None = None
+
+
+@schema(Project)
+class ProjectReadSchema(ProjectCreateSchema, BaseReadSchema):
+    active: bool
+
+
+@schema(Project)
+class ProjectDetailSchema(ProjectReadSchema):
+    tasks: list[TaskReadSchema] = []
 
 
 class ProjectStatsSchema(BaseModel):
     project_id: int
     completed: int = 0
     incomplete: int = 0
-
-
-# Task schemas
-TaskReadSchema = build_schema(Task, meta=get_task_with_project_meta())
-TaskCreateSchema = rebuild_schema(TaskReadSchema, exclude_readonly=True)
-
-# Type checking support
-if TYPE_CHECKING:
-    ProjectReadSchema = type("ProjectReadSchema", (Project, PydanticModel), {})
-    ProjectCreateSchema = type("ProjectCreateSchema", (Project, PydanticModel), {})
-    ProjectDetailSchema = type("ProjectDetailSchema", (Project, PydanticModel), {})
-    TaskReadSchema = type("TaskReadSchema", (Task, PydanticModel), {})
-    TaskCreateSchema = type("TaskCreateSchema", (Task, PydanticModel), {})
 ```
 
-### 6. Create Your ViewSets
+!!! tip "Explicit is safer"
+    New ORM fields do not leak into your API until you add them to a schema.
+    This is especially important for internal flags, ownership fields, tokens,
+    and audit data.
 
-Now create ViewSets for both models with relationship handling:
+### 7. Filters
+
+```python title="app/domains/project/filters.py"
+from tortoise.expressions import Q
+from tortoise.queryset import QuerySet
+
+from app.domains.project.models import Project, Task
+from fastapi_ronin.filters import BooleanFilter, CharFilter, DateTimeFilter, FilterSet, OrderingFilter, Parameter
+
+
+class ProjectFilterSet(FilterSet):
+    fields = [
+        CharFilter(field_name='search', method='filter_by_search'),
+        BooleanFilter(field_name='active'),
+        DateTimeFilter(field_name='created_at', lookups=['gte', 'lte', 'exact']),
+    ]
+    ordering = OrderingFilter(
+        fields=(
+            'name',
+            ('created', 'created_at'),
+            ('updated', 'updated_at'),
+        ),
+        default=('-created',),
+    )
+
+    def filter_by_search(self, queryset: QuerySet[Project], value: str, parameter: Parameter):
+        return queryset.filter(Q(name__icontains=value) | Q(description__icontains=value))
+
+    class Meta:
+        model = Project
+
+
+class TaskFilterSet(FilterSet):
+    fields = [
+        CharFilter(field_name='search', method='filter_by_search'),
+        BooleanFilter(field_name='completed'),
+    ]
+
+    def filter_by_search(self, queryset: QuerySet[Task], value: str, parameter: Parameter):
+        return queryset.filter(Q(name__icontains=value) | Q(description__icontains=value))
+
+    class Meta:
+        model = Task
+```
+
+### 8. ViewSets
 
 ```python title="app/domains/project/views.py"
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi_ronin.cache import cache
 from fastapi_ronin.decorators import action, viewset
 from fastapi_ronin.pagination import PageNumberPagination
 from fastapi_ronin.wrappers import PaginatedResponseDataWrapper
 
-from app.core.viewsets import BaseViewSet
+from app.core.viewsets import BaseModelViewSet
+from app.domains.project.filters import ProjectFilterSet, TaskFilterSet
 from app.domains.project.models import Project, Task
 from app.domains.project.schemas import (
+    ProjectCreateSchema,
     ProjectDetailSchema,
     ProjectReadSchema,
-    ProjectCreateSchema,
     ProjectStatsSchema,
     TaskCreateSchema,
     TaskReadSchema,
 )
 
-projects_router = APIRouter(prefix="/projects", tags=["projects"])
-tasks_router = APIRouter(prefix="/tasks", tags=["tasks"])
+projects_router = APIRouter(prefix='/projects', tags=['projects'])
+tasks_router = APIRouter(prefix='/tasks', tags=['tasks'])
 
 
 @viewset(projects_router)
-class ProjectViewSet(BaseViewSet[Project]):
+class ProjectViewSet(BaseModelViewSet[Project]):
     model = Project
     read_schema = ProjectDetailSchema
     many_read_schema = ProjectReadSchema
     create_schema = ProjectCreateSchema
+    filterset_class = ProjectFilterSet
 
     def get_queryset(self):
-        """Override get_queryset method"""
-        return Project.filter(active=True)
+        return Project.filter(active=True).prefetch_related('tasks')
 
     async def perform_destroy(self, obj: Project):
-        """Override perform_destroy method"""
         obj.active = False
         await obj.save()
-        return obj
 
-    @action(methods=["GET"], detail=True, response_model=ProjectStatsSchema)
-    async def stats(self, item_id: int):
-        """Get stats for a project"""
+    @action(methods=['GET'], detail=True)
+    async def stats(self, item_id: int) -> ProjectStatsSchema:
+        cache_key = f'project:{item_id}:stats'
+        cached = await cache.get(cache_key)
+        if cached:
+            return ProjectStatsSchema(**cached)
+
         project = await self.get_object(item_id)
         tasks = Task.filter(project=project)
-        return ProjectStatsSchema(
+        result = ProjectStatsSchema(
             project_id=project.id,
             completed=await tasks.filter(completed=True).count(),
             incomplete=await tasks.filter(completed=False).count(),
         )
+        await cache.set(cache_key, result.model_dump(), ttl=60)
+        return result
 
 
 @viewset(tasks_router)
-class TaskViewSet(BaseViewSet[Task]):
+class TaskViewSet(BaseModelViewSet[Task]):
     model = Task
     read_schema = TaskReadSchema
     create_schema = TaskCreateSchema
+    filterset_class = TaskFilterSet
 
-    @action(methods=["GET"], response_model=PaginatedResponseDataWrapper[TaskReadSchema, PageNumberPagination])
+    @action(methods=['GET'])
     async def list(
-        self,
-        pagination: PageNumberPagination = Depends(PageNumberPagination.build),
-        project_id: bool = Query(...),
-    ):
-        """Override list method"""
-        queryset = self.get_queryset().filter(project_id=project_id)
+        self, pagination: PageNumberPagination = Depends(PageNumberPagination.build), project_id: int = Query(...)
+    ) -> PaginatedResponseDataWrapper[TaskReadSchema, PageNumberPagination]:
+        queryset = Task.filter(project_id=project_id)
         return await self.get_paginated_response(queryset=queryset, pagination=pagination)
 
     async def before_save(self, obj: Task):
-      """Before save hook"""
-        await obj.fetch_related("project")
+        await obj.fetch_related('project')
         if obj.project.active is False:
-            raise HTTPException(status_code=400, detail="Project is not active")
+            raise HTTPException(status_code=400, detail='Project is not active')
 ```
 
-### 7. Setup FastAPI Application
-
-Wire everything together in your main application:
+### 9. FastAPI Application
 
 ```python title="app/main.py"
-from fastapi import FastAPI
-from tortoise.contrib.fastapi import register_tortoise
+from contextlib import asynccontextmanager
 
-from app.domains.project.views import router as projects_router, tasks_router
+from fastapi import FastAPI
+from fastapi_ronin.cache import cache
+
+from app.core.database import register_database
+from app.core.settings import settings
+from app.domains.project.views import projects_router, tasks_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await cache.init(redis_url=settings.redis_url)
+    yield
+    await cache.close()
+
 
 app = FastAPI(
-    title="Project Management API",
-    description="A project management API built with FastAPI Ronin",
-    version="1.0.0"
+    title='Project Management API',
+    description='A project management API built with FastAPI Ronin',
+    version='1.0.0',
+    lifespan=lifespan,
 )
 
-# Register database here or in database.py
-register_tortoise(
-    app,
-    db_url="sqlite://db.sqlite3",
-    modules={"models": ["app.domains.project.models"]},
-    generate_schemas=True,
-    add_exception_handlers=True,
-)
-
-# Include ViewSet router
+register_database(app)
 app.include_router(projects_router)
 app.include_router(tasks_router)
 ```
 
-### 8. Run Your API
+### 10. Run your app
 
-Start the development server:
+
+```toml title="Add to pyproject.toml"
+[tool.tortoise]
+tortoise_orm = "app.core.database.TORTOISE_ORM"
+```
+
+```bash title="Run migrations"
+tortoise makemigrations
+tortoise migrate
+```
 
 ```bash
-uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload
 ```
+
+Open `http://127.0.0.1:8000/docs`.
 
 ## 🎉 What You Get
 
-Check Your API `http://localhost:8000/docs` with these endpoints:
-
 ### Project Endpoints
 
-| Method   | Endpoint                   | Description               |
-| -------- | -------------------------- | ------------------------- |
-| `GET`    | `/projects/`               | List projects (paginated) |
-| `POST`   | `/projects/`               | Create new project        |
-| `GET`    | `/projects/{item_id}/`          | Get project with tasks    |
-| `PUT`    | `/projects/{item_id}/`          | Update project            |
-| `DELETE` | `/projects/{item_id}/`          | Delete project            |
-| `GET`    | `/projects/{item_id}/stats/`    | Get stats for project |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/projects/` | List active projects with filters, ordering, pagination, and wrappers |
+| `POST` | `/projects/` | Create a project |
+| `GET` | `/projects/{item_id}/` | Get project details with tasks |
+| `PUT` | `/projects/{item_id}/` | Update a project |
+| `PATCH` | `/projects/{item_id}/` | Partially update a project |
+| `DELETE` | `/projects/{item_id}/` | Soft-delete a project |
+| `GET` | `/projects/{item_id}/stats/` | Get cached project stats |
 
-And tasks endpoints.
+### Task Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/tasks/?project_id=1` | List tasks for one project |
+| `POST` | `/tasks/` | Create a task |
+| `GET` | `/tasks/{item_id}/` | Get task details |
+| `PUT` | `/tasks/{item_id}/` | Update a task |
+| `PATCH` | `/tasks/{item_id}/` | Partially update a task |
+| `DELETE` | `/tasks/{item_id}/` | Delete a task |
 
 ## 📋 API Response Examples
 
 ### List Projects
 
-```json title="GET /projects/?page=1&size=10"
+```json title="GET /projects/?page=1&size=10&search=website"
 {
   "data": [
     {
       "id": 1,
       "name": "Website Redesign",
       "description": "Complete overhaul of company website",
-      "created_at": "2024-01-15T11:00:00Z",
-      "updated_at": "2024-01-15T11:00:00Z"
+      "active": true,
+      "created_at": "2026-01-15T11:00:00Z",
+      "updated_at": "2026-01-15T11:00:00Z"
     }
   ],
   "meta": {
@@ -366,7 +483,7 @@ And tasks endpoints.
 }
 ```
 
-### Get Project Details (with tasks)
+### Project Detail
 
 ```json title="GET /projects/1/"
 {
@@ -374,85 +491,59 @@ And tasks endpoints.
     "id": 1,
     "name": "Website Redesign",
     "description": "Complete overhaul of company website",
+    "active": true,
     "tasks": [
       {
         "id": 1,
         "name": "Design mockups",
-        "description": "Create UI/UX mockups for the new website",
+        "description": "Create UI/UX mockups",
+        "project_id": 1,
         "completed": false,
-        "project": {
-          "id": 1,
-          "name": "Website Redesign",
-          "description": "Complete overhaul of company website",
-        },
-        "created_at": "2024-01-15T12:00:00Z",
-        "updated_at": "2024-01-15T12:00:00Z"
+        "created_at": "2026-01-15T12:00:00Z",
+        "updated_at": "2026-01-15T12:00:00Z"
       }
     ],
-    "created_at": "2024-01-15T11:00:00Z",
-    "updated_at": "2024-01-15T11:00:00Z"
+    "created_at": "2026-01-15T11:00:00Z",
+    "updated_at": "2026-01-15T11:00:00Z"
   }
 }
 ```
 
-## 🔧 Key Features Demonstrated
+### Project Stats
 
-### 1. **Relationship Handling**
-
-- ForeignKey and related objects are automatically included in schemas using `build_schema_meta`.
-- Nested object serialization (e.g., project with tasks, task with project).
-- Circular reference support with `ConfigSchemaMeta(allow_cycles=True)`.
-
-### 2. **Flexible Schema Generation**
-
-- Different schemas for list and detail views.
-- Customizable field inclusion through meta classes (`SchemaMeta`, `build_schema_meta`).
-- Generation of nested schemas for related models.
-
-### 3. **Base and Custom ViewSets**
-
-- Rapid creation of CRUD endpoints using `ModelViewSet` and `BaseViewSet`.
-- Overriding methods (`get_queryset`, `perform_destroy`, `before_save`) for business logic.
-- Built-in pagination and response wrappers (`PageNumberPagination`, `PaginatedResponseDataWrapper`).
-
-### 4. **Custom Actions and Routes**
-
-- Easy addition of custom endpoints with the `@action` decorator.
-- Automatic routing and OpenAPI documentation for custom and overiding methods (e.g., `stats` for project, `list` with project_id filter for tasks).
+```json title="GET /projects/1/stats/"
+{
+  "project_id": 1,
+  "completed": 3,
+  "incomplete": 7
+}
+```
 
 ## 👋 Adding Authentication
 
-Want to add authentication? It's easy with state management:
+Ronin does not force an auth system. Use FastAPI dependencies and put the user
+into Ronin state.
 
 ```python title="app/core/auth.py"
-from typing import Optional
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi_ronin.state import BaseStateManager
 
-
-class OptionalHTTPBearer(HTTPBearer):
-    async def __call__(self, request: Request) -> Optional[HTTPAuthorizationCredentials]:
-        credentials: Optional[HTTPAuthorizationCredentials] = None
-        try:
-            credentials = await super().__call__(request)
-        except HTTPException:
-            # No credentials provided — allow anonymous
-            return None
-        return credentials
+security = HTTPBearer(auto_error=False)
 
 
-async def get_current_user(token: Optional[HTTPAuthorizationCredentials] = Depends(OptionalHTTPBearer())):
-    if token and token.credentials == "token":  # Your logic
-        user = {"id": 1, "username": "john"}
+async def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(security)):
+    if credentials and credentials.credentials == 'token':
+        user = {'id': 1, 'email': 'admin@example.com'}
         BaseStateManager.set_user(user)
         return user
     return None
 ```
 
-Then add it as app dependency or or to the required routers:
+Apply it globally:
 
 ```python title="app/main.py"
+from fastapi import Depends, FastAPI
 from app.core.auth import get_current_user
 
 app = FastAPI(dependencies=[Depends(get_current_user)])
@@ -460,39 +551,36 @@ app = FastAPI(dependencies=[Depends(get_current_user)])
 
 ## 🛡️ Adding Permissions
 
-Protect your endpoints with permission classes:
-
 ```python title="app/domains/project/views.py"
 from fastapi_ronin.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
-@viewset(router)
-class ProjectViewSet(ModelViewSet[Project]):
-    # ... other configuration ...
 
+@viewset(projects_router)
+class ProjectViewSet(BaseModelViewSet[Project]):
     # permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_permissions(self):
-        # Custom permissions per action
-        if self.action in ['add_task', 'tasks', 'complete']:
-            return [IsAuthenticated()]
-        return []
+        if self.action in ('stats', 'list', 'retrieve'):
+            return []
+        return [IsAuthenticated()]
 ```
-
-## 🎯 Next Steps
-
-Congratulations! You've built a complete REST API with related models using FastAPI Ronin. Here's what to explore next:
-
-- **[ViewSets](viewsets/index.md)** - Learn about advanced ViewSet features
-- **[Meta & Schemas](schemas.md)** - Master schema generation and relationships
-- **[Permissions](permissions.md)** - Implement complex authorization rules
-- **[Pagination](pagination.md)** - Explore different pagination strategies
-- **[State Management](state.md)** - Share data across your application
-- **[Response Wrappers](wrappers.md)** - Customize API response formatting
 
 ## 💡 Tips
 
 !!! tip "Domains Architecture"
-    Keep your domains focused and cohesive. Each domain should represent a clear business concept with its own models, meta, schemas, and views.
+    Keep each domain focused: models, schemas, filters, and views for one
+    business concept should live together.
 
-!!! tip "Schema Flexibility"
-    Use different meta classes for different use cases - simple schemas for lists, detailed schemas for single items, and minimal schemas for creation.
+!!! tip "Base ViewSets"
+    Put shared defaults in `app/core/viewsets.py`: pagination, wrappers,
+    permission defaults, or shared helper methods.
+
+## 🎯 Next Steps
+
+- [ViewSets](viewsets/index.md) - learn the core ViewSet model
+- [Schemas](schemas.md) - design explicit request and response contracts
+- [Filters](filters.md) - add query parameters and ordering
+- [Cache](cache.md) - configure in-memory or Redis-backed cache
+- [Permissions](permissions.md) - protect write operations
+- [Pagination](pagination.md) - tune list endpoints
+- [Response Wrappers](wrappers.md) - standardize API responses

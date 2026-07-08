@@ -62,7 +62,7 @@ def action(
 
 
 def schema(model: Type[Model], **kwargs):
-    """Decorator to mark a viewset method as a routable action."""
+    """Bind a PydanticModel schema class to a Tortoise ORM model."""
 
     def _get_all_annotations(cls):
         annotations = {}

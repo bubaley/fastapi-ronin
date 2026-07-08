@@ -19,15 +19,17 @@ keywords = [
 license = { text = "MIT" }
 maintainers = [ { name = "bubaley", email = "bubaley.fu@gmail.com" } ]
 authors = [ { name = "bubaley", email = "bubaley.fu@gmail.com" } ]
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.11,<=3.14"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: FastAPI",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
@@ -35,22 +37,23 @@ classifiers = [
 
 dependencies = [
     "fastapi>=0.115.13",
-    "tortoise-orm>=0.25.1",
+    "tortoise-orm>=1.1.0",
 ]
 
+optional-dependencies.redis = [ "redis>=5.0.0" ]
 urls.Documentation = "https://github.com/bubaley/fastapi-ronin#readme"
 urls.Homepage = "https://github.com/bubaley/fastapi-ronin"
 urls.Repository = "https://github.com/bubaley/fastapi-ronin.git"
 
 [dependency-groups]
 dev = [
-    "aerich[toml]>=0.9.1",
     "coverage>=7.9.2",
     "pre-commit>=4.2.0",
     "pydantic-settings>=2.10.1",
     "pytest>=9.0.1",
     "redis>=5.0.0",
     "ruff>=0.12.2",
+    "ty>=0.0.56",
     "uvicorn[standard]>=0.35.0",
 ]
 docs = [
@@ -83,3 +86,8 @@ exclude_dirs = [ "tests", "*/tests/*", "*/migrations/*", "scripts/test-docs.py" 
 tortoise_orm = "app.core.database.TORTOISE_ORM"
 location = "./migrations"
 src_folder = "./."
+
+[tool.uv.workspace]
+members = [
+    "project-api",
+]

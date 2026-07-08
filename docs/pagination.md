@@ -1,242 +1,173 @@
 ---
-title: FastAPI Pagination — Efficient Data Management with FastAPI Ronin
-description: Improve your FastAPI application's performance with Mason's advanced API pagination. Supports multiple strategies like limit-offset and cursor-based pagination for scalable REST APIs.
-keywords: FastAPI pagination, API pagination, Django REST Framework pagination, REST API performance, limit-offset pagination, cursor pagination, FastAPI Ronin, scalable APIs, data pagination, Python REST API
+title: FastAPI Ronin Pagination — Page and Limit-Offset Pagination
+description: Configure FastAPI Ronin list endpoints with disabled, page-number, or limit-offset pagination and include metadata through response wrappers.
+keywords: FastAPI pagination, FastAPI Ronin, Tortoise ORM pagination, page number pagination, limit offset pagination
 ---
 
-# API Pagination: Efficient Data Management with FastAPI Ronin
+# Pagination
 
-FastAPI Ronin provides multiple pagination strategies to efficiently handle large datasets. Each strategy is designed for different use cases and offers various trade-offs between performance, consistency, and user experience.
+Pagination is configured on a ViewSet. Ronin parses FastAPI query parameters,
+applies pagination to the Tortoise queryset, then optionally includes metadata
+through a paginated response wrapper.
 
-## Overview
+## Available Strategies
 
-FastAPI Ronin supports four pagination strategies:
+| Class | Query Parameters | Use When |
+|-------|------------------|----------|
+| `DisabledPagination` | none | You want the full result set. |
+| `PageNumberPagination` | `page`, `size` | You want common page-based navigation. |
+| `LimitOffsetPagination` | `offset`, `limit` | You want API/client-driven offsets. |
 
-1. **DisabledPagination** - No pagination (returns all results)
-2. **LimitOffsetPagination** - Traditional limit/offset pagination
-3. **PageNumberPagination** - Page-based pagination
-4. **CursorPagination** - Cursor-based pagination for consistent results
-
-## Pagination in ViewSets
-
-Set pagination on your ViewSet class:
+## Page Number Pagination
 
 ```python
 from fastapi_ronin.pagination import PageNumberPagination
-from fastapi_ronin.viewsets import ModelViewSet
 from fastapi_ronin.wrappers import PaginatedResponseDataWrapper
+
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
     model = Company
-    read_schema = CompanyReadSchema
+    read_schema = CompanySchema
     create_schema = CompanyCreateSchema
 
-    # Configure pagination
     pagination = PageNumberPagination
-    list_wrapper = PaginatedResponseDataWrapper  # Include pagination metadata
+    list_wrapper = PaginatedResponseDataWrapper
 ```
 
-## Disabled Pagination
-
-Use when you want to return all results without pagination:
-
-```python
-from fastapi_ronin.pagination import DisabledPagination
-
-@viewset(router)
-class CompanyViewSet(ModelViewSet[Company]):
-    pagination = DisabledPagination
-    list_wrapper = None  # No pagination metadata needed
+```text
+GET /companies/?page=2&size=20
 ```
 
-**Response:**
-```json
-[
-  {"id": 1, "name": "Company A"},
-  {"id": 2, "name": "Company B"},
-  {"id": 3, "name": "Company C"}
-]
-```
-
-## Page Number Pagination
-
-The most common pagination strategy, using page numbers and page size:
-
-```python
-from fastapi_ronin.pagination import PageNumberPagination
-
-@viewset(router)
-class CompanyViewSet(ModelViewSet[Company]):
-    pagination = PageNumberPagination  # Default: 10 items per page
-```
-
-**Query Parameters**
-
-- `page` (int, default=1): Page number to retrieve
-- `size` (int, default=10, max=100): Number of items per page
-
-**API Usage**
-
-```bash
-GET /companies/?page=2&size=5
-```
-
-**Response Format**
+Response with `PaginatedResponseDataWrapper`:
 
 ```json
 {
   "data": [
-    {"id": 6, "name": "Company F"},
-    {"id": 7, "name": "Company G"},
-    {"id": 8, "name": "Company H"},
-    {"id": 9, "name": "Company I"},
-    {"id": 10, "name": "Company J"}
+    {"id": 21, "name": "Company 21"}
   ],
   "meta": {
     "page": 2,
-    "size": 5,
-    "total": 25,
-    "pages": 5
+    "size": 20,
+    "total": 41,
+    "pages": 3
   }
 }
 ```
 
-**Metadata Fields**
-
-| Field | Description |
-|-------|-------------|
-| `page` | Current page number |
-| `size` | Number of items per page |
-| `total` | Total number of items |
-| `pages` | Total number of pages |
+`size` is constrained to `1..100` by default.
 
 ## Limit/Offset Pagination
-
-Traditional pagination using offset and limit:
 
 ```python
 from fastapi_ronin.pagination import LimitOffsetPagination
 
+
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
     pagination = LimitOffsetPagination
+    list_wrapper = PaginatedResponseDataWrapper
 ```
 
-**Query Parameters**
-
-- `offset` (int, default=0): Number of items to skip
-- `limit` (int, default=10, max=100): Number of items to return
-
-**API Usage**
-
-```bash
-GET /companies/?offset=10&limit=5
+```text
+GET /companies/?offset=40&limit=20
 ```
 
-**Response Format**
+Response metadata:
 
 ```json
 {
   "data": [
-    {"id": 11, "name": "Company K"},
-    {"id": 12, "name": "Company L"},
-    {"id": 13, "name": "Company M"},
-    {"id": 14, "name": "Company N"},
-    {"id": 15, "name": "Company O"}
+    {"id": 41, "name": "Company 41"}
   ],
   "meta": {
-    "offset": 10,
-    "limit": 5,
-    "total": 25
+    "offset": 40,
+    "limit": 20,
+    "total": 41
   }
 }
 ```
 
-## Pagination in Custom Actions
-
-Use pagination in your custom actions:
+## Disable Pagination
 
 ```python
+from fastapi_ronin.pagination import DisabledPagination
+
+
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
-    pagination = PageNumberPagination
-
-    @action(methods=["GET"], response_model=List[ProjectReadSchema])
-    async def paginated_list(self, pagination: PageNumberPagination = Depends(PageNumberPagination.build)):
-        queryset = self.get_queryset()
-        return await self.get_paginated_response(queryset=queryset, pagination=pagination)
-
-    @action(methods=["GET"], response_model=PaginatedResponseDataWrapper[ProjectReadSchema, PageNumberPagination[Company]])
-    async def wrapped_paginated_list(self, pagination: PageNumberPagination = Depends(PageNumberPagination.build)):
-        queryset = self.get_queryset()
-        return await self.get_paginated_response(queryset=queryset, pagination=pagination, wrapper=PaginatedResponseDataWrapper)
+    pagination = DisabledPagination
+    list_wrapper = None
 ```
-## Override Pagination
 
-You can create a custom pagination class by inheriting from the `Pagination` abstract base class and implementing the required abstract methods. This allows you to define a tailored pagination strategy to meet specific requirements, such as custom query parameters or pagination logic.
+This returns a plain list unless you use a non-paginated list wrapper.
 
-### Expansion of existing
+## Pagination in Custom Actions
+
+Use the same pagination class as a FastAPI dependency:
+
 ```python
+from fastapi import Depends
 from fastapi_ronin.pagination import PageNumberPagination
-from fastapi import Query
-
-from fastapi_ronin.types import ModelType
+from fastapi_ronin.wrappers import PaginatedResponseDataWrapper
 
 
-class CustomPageNumberPagination(PageNumberPagination[ModelType]):
-    """Custom pagination implementation with flexible page size and offset."""
-
-    @classmethod
-    def build(
-        cls,
-        page: int = Query(1, ge=1, description="Page number"),
-        size: int = Query(20, ge=1, le=1000, description="Number of records per page"),
-    ) -> "CustomPageNumberPagination":
-        return cls(page=page, size=size)
+@action(
+    methods=['GET'],
+    response_model=PaginatedResponseDataWrapper[CompanySchema, PageNumberPagination],
+)
+async def active(
+    self,
+    pagination: PageNumberPagination = Depends(PageNumberPagination.build),
+):
+    queryset = Company.filter(active=True)
+    return await self.get_paginated_response(
+        queryset=queryset,
+        pagination=pagination,
+        wrapper=PaginatedResponseDataWrapper,
+    )
 ```
 
-### Custom
+## Custom Pagination
+
+Create a pagination class by extending `Pagination`.
+
 ```python
-from typing import Any, List
-from fastapi_ronin.pagination import Pagination
-from fastapi import Query
 import math
+from typing import Any
+
+from fastapi import Query
 from tortoise.queryset import QuerySet
 
+from fastapi_ronin.pagination import Pagination
 from fastapi_ronin.types import ModelType
 
 
-class CustomPagination(Pagination[ModelType]):
-    """Custom pagination implementation with flexible page size and offset."""
-
+class SmallPagePagination(Pagination[ModelType]):
     page: int = 1
-    size: int = 10
+    size: int = 5
     total: int = 0
     pages: int = 0
 
     @classmethod
     def build(
         cls,
-        page: int = Query(1, ge=1, description="Page number to retrieve"),
-        size: int = Query(10, ge=1, le=50, description="Number of records per page"),
-    ) -> "CustomPagination":
-        """Create pagination instance from query parameters."""
+        page: int = Query(1, ge=1),
+        size: int = Query(5, ge=1, le=25),
+    ) -> 'SmallPagePagination':
         return cls(page=page, size=size)
 
     def paginate(self, queryset: QuerySet[ModelType]) -> QuerySet[ModelType]:
-        """Apply pagination to a queryset."""
-        offset = (self.page - 1) * self.size
-        return queryset.offset(offset).limit(self.size)
+        return queryset.offset((self.page - 1) * self.size).limit(self.size)
 
-    async def fill_meta(self, queryset: QuerySet[ModelType], data: List[Any]) -> None:
-        """Fill pagination metadata (like total count, pages, etc.)."""
+    async def fill_meta(self, queryset: QuerySet[ModelType], data: list[Any]) -> None:
         self.total = await queryset.count()
-        self.pages = math.ceil(self.total / self.size) if self.size > 0 else 0
+        self.pages = math.ceil(self.total / self.size) if self.size else 0
 ```
 
-**Explanation**
+## Guidance
 
-- `build`: Defines how query parameters are parsed into the pagination instance. In this example, it uses page and size with constraints (e.g., size capped at 50).
-- `paginate`: Applies the pagination logic to the queryset, calculating the offset based on the page and size, then limiting the results.
-- `fill_meta`: Computes metadata like the total item count and number of pages, ensuring accurate pagination information in the response.
+- Use `PageNumberPagination` for most public APIs.
+- Use `LimitOffsetPagination` when clients need direct offset control.
+- Use `DisabledPagination` only for small bounded collections.
+- Pair paginated strategies with `PaginatedResponseDataWrapper` when clients need metadata.

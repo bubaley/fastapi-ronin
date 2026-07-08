@@ -173,7 +173,7 @@ class GenericViewSet(Generic[ModelType]):
                 return self.list_wrapper[self.many_read_schema, self.pagination]
         return list[self.many_read_schema]
 
-    def get_sigle_response(self, data: PydanticModel):
+    def get_single_response(self, data: PydanticModel):
         if self.single_wrapper:
             return self.single_wrapper.wrap(data=data)
         return data

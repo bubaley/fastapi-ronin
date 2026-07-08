@@ -1,60 +1,107 @@
 ---
-title: FastAPI ViewSet Lifecycle Hooks — Customize API Object Processing with FastAPI Ronin
-description: Use FastAPI Ronin ViewSet lifecycle hooks to customize validation, before/after save actions, and custom create/update operations. Enhance your API with fine-grained control.
-keywords: FastAPI lifecycle hooks, ViewSet hooks, Django REST Framework hooks, API customization, FastAPI Ronin advanced features, object validation, create update hooks, API processing
+title: FastAPI Ronin Lifecycle Hooks — Customize ViewSet Persistence
+description: Customize FastAPI Ronin create, update, and delete flows with validate_data, before_save, after_save, perform_save, perform_create, perform_update, and perform_destroy.
+keywords: FastAPI Ronin lifecycle hooks, ViewSet hooks, validation hooks, soft delete, CRUD customization
 ---
 
-# FastAPI ViewSet Lifecycle Hooks: Advanced API Object Processing
+# Lifecycle Hooks
 
-FastAPI Ronin ViewSets support lifecycle hooks that let you customize object processing at key stages. Control validation, before and after save operations, and implement custom create or update logic to tailor your API behavior precisely.
+Lifecycle hooks let you add domain behavior around the generated CRUD routes
+without rewriting the whole endpoint.
+
+## Create and Update Flow
+
+For `POST`, `PUT`, and `PATCH`, Ronin calls:
+
+1. `validate_data(data)`
+2. `self.state.validated_data = data`
+3. `obj.update_from_dict(data.model_dump(exclude_unset=True))`
+4. `before_save(obj)`
+5. `perform_create(obj)` or `perform_update(obj)`
+6. `perform_save(obj)`
+7. `after_save(obj)`
+8. serialize with `read_schema`
+
+## Available Hooks
+
+| Hook | Purpose |
+|------|---------|
+| `validate_data(data)` | Normalize or reject request data before it is applied. |
+| `before_save(obj)` | Run checks or enrich the object before saving. |
+| `perform_save(obj)` | Central save operation used by create and update. |
+| `perform_create(obj)` | Customize create persistence. |
+| `perform_update(obj)` | Customize update persistence. |
+| `after_save(obj)` | Run side effects after persistence. |
+| `perform_destroy(obj)` | Customize delete behavior. |
+
+## Validation Example
+
+```python
+from fastapi import HTTPException
 
 
-| Method             | When it is called                                    |
-|--------------------|-----------------------------------------------------|
-| `validate_data`    | Before processing input data (create/update)         |
-| `before_save`      | Before saving the object (create/update)             |
-| `after_save`       | After saving the object (create/update)              |
-| `perform_create`   | When creating an object (POST)                       |
-| `perform_update`   | When updating an object (PUT/PATCH)                  |
-| `perform_save`     | When creating or updating an object (PUT/PATCH/POST) |
-| `perform_destroy`  | When deleting an object (DELETE)                     |
+@viewset(router)
+class CompanyViewSet(ModelViewSet[Company]):
+    model = Company
+    read_schema = CompanySchema
+    create_schema = CompanyCreateSchema
 
-You can override any of these methods in your ViewSet to add custom logic. Example:
+    async def validate_data(self, data: CompanyCreateSchema):
+        if data.name.strip() == '':
+            raise HTTPException(status_code=400, detail='Company name is required')
+        return data
+```
+
+## Save Hooks
 
 ```python
 @viewset(router)
-class CompanyViewSet(ModelViewSet[Company]):
-    # ...
-    async def validate_data(self, data: CompanyCreateSchema):
-        return data
+class TaskViewSet(ModelViewSet[Task]):
+    model = Task
+    read_schema = TaskSchema
+    create_schema = TaskCreateSchema
 
-    async def before_save(self, obj: Company):
-        pass
+    async def before_save(self, obj: Task):
+        await obj.fetch_related('project')
+        if not obj.project.active:
+            raise HTTPException(status_code=400, detail='Project is not active')
 
-    async def after_save(self, obj: Company):
-        pass
+    async def after_save(self, obj: Task):
+        await cache.delete(f'project:{obj.project_id}:stats')
+```
 
-    async def perform_create(self, obj: Company):
-        return await self.perform_save(obj)
+## Soft Delete
 
-    async def perform_update(self, obj: Company):
-        return await self.perform_save(obj)
+```python
+@viewset(router)
+class ProjectViewSet(ModelViewSet[Project]):
+    model = Project
+    read_schema = ProjectSchema
+    create_schema = ProjectCreateSchema
 
-    async def perform_save(self, obj: Company):
-        await obj.save()
-        return obj
+    def get_queryset(self):
+        return Project.filter(active=True)
 
-    async def perform_destroy(self, obj: Company):
-        obj.is_deleted = True
+    async def perform_destroy(self, obj: Project):
+        obj.active = False
         await obj.save()
 ```
 
-Call order for create/update:
+## Access Validated Data
 
-1. `validate_data`
-2. `before_save`
-3. `perform_create` / `perform_update`
-4. `perform_save`
-5. `after_save`
+During create and update, Ronin stores the request model on state:
 
-For deletion, only `perform_destroy` is called.
+```python
+async def before_save(self, obj: Company):
+    data = self.state.validated_data
+    if data.status == 'inactive':
+        obj.deactivated_by = self.user['id']
+```
+
+## Guidance
+
+- Use `validate_data()` for request-level checks.
+- Use `before_save()` for object-level checks before persistence.
+- Use `after_save()` for cache invalidation and other side effects.
+- Use `perform_destroy()` for soft delete.
+- Keep hooks focused; move larger domain workflows into service functions.

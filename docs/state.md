@@ -6,7 +6,10 @@ keywords: FastAPI state management, request context, FastAPI middleware state, P
 
 # Request State Management in FastAPI Ronin
 
-FastAPI Ronin offers a request-scoped state management system that lets you safely share data across middleware, ViewSets, and other components during a single request lifecycle. Built with concurrency safety in mind, this system is ideal for passing user data, request context, and other runtime information throughout your FastAPI application.
+FastAPI Ronin offers a request-scoped state management system that lets you
+share data across dependencies, ViewSets, and other components during one
+request lifecycle. It is built on Python `contextvars`, so concurrent async
+requests do not share state.
 
 ## Overview
 
@@ -15,7 +18,7 @@ The state management system uses Python's `contextvars` to maintain request-scop
 Key features:
 
 - **Request-scoped**: Data is isolated per request
-- **Thread-safe**: Works correctly with FastAPI's async nature
+- **Async-safe**: Works correctly with FastAPI's async nature
 - **Automatic cleanup**: State is cleared after each request
 - **Flexible storage**: Store any type of data
 
@@ -295,4 +298,4 @@ class CompanyViewSet(ModelViewSet[Company]):
         return await super().perform_create(obj)
 ```
 
-State management in FastAPI Ronin provides a clean way to share request-scoped data across your application while maintaining thread safety and proper isolation between requests.
+State management in FastAPI Ronin provides a clean way to share request-scoped data across your application while maintaining proper isolation between concurrent requests.

@@ -35,6 +35,7 @@ class Filter:
         view_name: Optional[str] = None,
         default: Any = None,
         default_lookup: Optional[str] = None,
+        lookup_expr: Optional[str] = None,
         description: Optional[str] = None,
         method: Optional[str] = None,
         _field_attrs: Optional[Dict[str, Any]] = None,
@@ -47,7 +48,7 @@ class Filter:
         self.field_name = field_name
         self.field_type = _field_type or self.field_type
         self.view_name = view_name or field_name.replace('.', '__')
-        self.default_lookup = default_lookup
+        self.default_lookup = default_lookup or lookup_expr
         self.lookups = lookups or [self.default_lookup or 'exact']
         self.required = required
         self.exclude = exclude
@@ -200,9 +201,7 @@ class OrderingFilter:
                 normalized.append(OrderingField(param_name=param_name, field_name=field_name))
                 continue
 
-            raise ValueError(
-                'Ordering fields must be strings or (param_name, field_name) tuples'
-            )
+            raise ValueError('Ordering fields must be strings or (param_name, field_name) tuples')
 
         param_names = [field.param_name for field in normalized]
         if len(param_names) != len(set(param_names)):
@@ -242,8 +241,7 @@ class OrderingFilter:
             field_name = self._param_to_field.get(param_name)
             if field_name is None:
                 raise ValueError(
-                    f"Invalid ordering field '{param_name}'. "
-                    f'Allowed values: {", ".join(sorted(self._param_to_field))}'
+                    f"Invalid ordering field '{param_name}'. Allowed values: {', '.join(sorted(self._param_to_field))}"
                 )
 
             order_by.append(f'-{field_name}' if descending else field_name)

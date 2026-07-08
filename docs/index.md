@@ -1,13 +1,14 @@
 ---
 title: FastAPI Ronin — Build REST APIs with Django Patterns in FastAPI
-description: FastAPI Ronin brings Django REST Framework patterns to FastAPI. Build robust APIs with ViewSets, automatic CRUD, permissions, and pagination using Tortoise ORM.
+description: FastAPI Ronin brings Django REST Framework patterns to FastAPI. Build robust APIs with ViewSets, explicit schemas, filters, permissions, pagination, wrappers, state, and cache using Tortoise ORM.
 keywords: FastAPI, Django REST Framework, ViewSets, REST API, Tortoise ORM, Python Backend, API Development, CRUD operations, FastAPI Ronin
 ---
+
 <p align="center">
   <h1 align="center">FastAPI Ronin</h1>
 </p>
 <p align="center">
-  <img align="center" src="assets/logo.png" alt="FastAPI Ronin - Django REST Framework for FastAPI" width="250"/>
+  <img align="center" src="assets/logo.png" alt="FastAPI Ronin - Django REST Framework patterns for FastAPI" width="250"/>
 </p>
 <p align="center">
   <span>Build REST APIs with Django REST Framework patterns in FastAPI</span>
@@ -28,7 +29,12 @@ keywords: FastAPI, Django REST Framework, ViewSets, REST API, Tortoise ORM, Pyth
 
 **Transform your FastAPI development with familiar Django REST Framework patterns.**
 
-If you've worked with Django REST Framework, you'll love FastAPI Ronin. It brings the same powerful patterns—ViewSets, automatic CRUD, permissions, and pagination—to FastAPI's high-performance foundation.
+FastAPI Ronin gives FastAPI + Tortoise ORM projects a clean class-based API layer:
+ViewSets, explicit schemas, filters, pagination, permissions, response wrappers,
+custom actions, request state, and cache.
+
+It is small enough to understand quickly, but structured enough to grow from a
+single-file prototype into a domain-oriented production app.
 
 <div align="center" style="margin: 2rem 0;">
   <a href="quick-start/" class="get-started-btn">
@@ -39,28 +45,42 @@ If you've worked with Django REST Framework, you'll love FastAPI Ronin. It bring
 ## 📦 Installation
 
 ```bash
-uv add fastapi-ronin
+uv add fastapi-ronin fastapi tortoise-orm uvicorn
 ```
 
-## 🚀 Quick Example
+For Redis-backed cache:
 
-Here's a complete example showing how to build a REST API with FastAPI Ronin:
+```bash
+uv add "fastapi-ronin[redis]"
+```
+
+## 🚀 Complete App in One File
+
+The root `main.py` is a complete runnable application. It includes database
+setup, a model, explicit schemas, filters, ordering, pagination, response
+wrappers, cache, and a custom action.
 
 ```python
-# main.py - Complete FastAPI Ronin application
+from contextlib import asynccontextmanager
+from datetime import datetime
+
 from fastapi import APIRouter, FastAPI
+from pydantic import BaseModel
 from tortoise import fields
 from tortoise.contrib.fastapi import register_tortoise
+from tortoise.contrib.pydantic import PydanticModel
+from tortoise.expressions import Q
 from tortoise.models import Model
+from tortoise.queryset import QuerySet
 
-from fastapi_ronin.decorators import action, viewset
+from fastapi_ronin.cache import cache
+from fastapi_ronin.decorators import action, schema, viewset
+from fastapi_ronin.filters import CharFilter, DateTimeFilter, FilterSet, OrderingFilter, Parameter
 from fastapi_ronin.pagination import PageNumberPagination
-from fastapi_ronin.schemas import SchemaMeta, build_schema, rebuild_schema
 from fastapi_ronin.viewsets import ModelViewSet
 from fastapi_ronin.wrappers import PaginatedResponseDataWrapper, ResponseDataWrapper
 
 
-# Database setup
 def register_database(app: FastAPI):
     register_tortoise(
         app,
@@ -71,7 +91,6 @@ def register_database(app: FastAPI):
     )
 
 
-# Models
 class Company(Model):
     id = fields.IntField(primary_key=True)
     name = fields.CharField(max_length=255)
@@ -80,37 +99,76 @@ class Company(Model):
     updated_at = fields.DatetimeField(auto_now=True)
 
 
-# Schema meta
-class CompanyMeta(SchemaMeta):
-    include = ('id', 'name', 'full_name', 'created_at', 'updated_at')
+@schema(Company)
+class CompanyCreateSchema(PydanticModel):
+    name: str
+    full_name: str | None
 
 
-# Schemas
-CompanySchema = build_schema(Company, meta=CompanyMeta)
-CompanyCreateSchema = rebuild_schema(CompanySchema, exclude_readonly=True)
+@schema(Company)
+class CompanyReadSchema(CompanyCreateSchema):
+    id: int
+    created_at: datetime
+    updated_at: datetime
 
-# Views
+
+class StatsSchema(BaseModel):
+    total: int
+    called_cache: int = 0
+
+
+class CompanyFilterSet(FilterSet):
+    fields = [
+        CharFilter(field_name='name', view_name='search_by_name', lookup_expr='icontains'),
+        CharFilter(field_name='search', method='filter_by_search'),
+        DateTimeFilter(field_name='created_at', lookups=['gte', 'lte', 'exact']),
+        DateTimeFilter(field_name='updated_at', lookups=['gte', 'lte', 'exact']),
+    ]
+    ordering = OrderingFilter(
+        fields=(
+            'name',
+            ('created', 'created_at'),
+            ('updated', 'updated_at'),
+        ),
+        default=('-created',),
+    )
+
+    def filter_by_search(self, queryset: QuerySet[Company], value: str, parameter: Parameter):
+        return queryset.filter(Q(name__icontains=value) | Q(full_name__icontains=value))
+
+    class Meta:
+        model = Company
+
+
 router = APIRouter(prefix='/companies', tags=['companies'])
+
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
     model = Company
-    read_schema = CompanySchema
     create_schema = CompanyCreateSchema
+    read_schema = CompanyReadSchema
 
     pagination = PageNumberPagination
     list_wrapper = PaginatedResponseDataWrapper
     single_wrapper = ResponseDataWrapper
+    filterset_class = CompanyFilterSet
 
-    # permission_classes = [IsAuthenticatedOrReadOnly]
+    @action(methods=['GET'], detail=False)
+    async def stats(self) -> StatsSchema:
+        called = (await cache.get('stats:call') or 0) + 1
+        await cache.set('stats:call', called)
+        return StatsSchema(total=await Company.all().count(), called_cache=called)
 
-    @action(methods=['GET'], detail=False, response_model=dict[str, int])
-    async def stats(self):
-        return {'total': await Company.all().count()}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await cache.init(None)
+    yield
+    await cache.close()
 
 
-# Application
-app = FastAPI(title='My API')
+app = FastAPI(title='My API', lifespan=lifespan)
 register_database(app)
 app.include_router(router)
 ```
@@ -121,119 +179,143 @@ Start server:
 uvicorn main:app --reload
 ```
 
- Try API Endpoints:
+## 📋 What You Get
+
+This creates the following endpoints:
+
+- `GET /companies/` - list companies with filters, ordering, pagination, and wrapper metadata
+- `POST /companies/` - create a new company
+- `GET /companies/{item_id}/` - retrieve a company
+- `PUT /companies/{item_id}/` - update a company
+- `PATCH /companies/{item_id}/` - partially update a company
+- `DELETE /companies/{item_id}/` - delete a company
+- `GET /companies/stats/` - custom cached stats endpoint
+
+Example requests:
+
+```text
+GET /companies/?search=acme
+GET /companies/?search_by_name=corp
+GET /companies/?created_at__gte=2026-01-01T00:00:00
+GET /companies/?ordering=-updated
+```
+
+Example list response:
 
 ```json
-"""
-This creates the following endpoints:
-- GET /companies/ - List companies with pagination
-- POST /companies/ - Create new company
-- GET /companies/{item_id}/ - Get specific company
-- PUT /companies/{item_id}/ - Update company
-- DELETE /companies/{item_id}/ - Delete company
-- GET /companies/stats/ - Custom stats endpoint
-
-Example API Responses:
-
-GET /companies/ (with pagination wrapper):
 {
   "data": [
     {
       "id": 1,
       "name": "Acme Corp",
       "full_name": "Acme Corporation Ltd.",
-      "created_at": "2023-01-01T10:00:00Z",
-      "updated_at": "2023-01-01T10:00:00Z"
+      "created_at": "2026-01-01T10:00:00Z",
+      "updated_at": "2026-01-01T10:00:00Z"
     }
   ],
-  "pagination": {
+  "meta": {
     "page": 1,
-    "page_size": 10,
-    "total_pages": 5,
-    "total_items": 47
+    "size": 10,
+    "total": 47,
+    "pages": 5
   }
 }
+```
 
-GET /companies/1/ (with single wrapper):
+Example detail response:
+
+```json
 {
   "data": {
     "id": 1,
     "name": "Acme Corp",
     "full_name": "Acme Corporation Ltd.",
-    "created_at": "2023-01-01T10:00:00Z",
-    "updated_at": "2023-01-01T10:00:00Z"
+    "created_at": "2026-01-01T10:00:00Z",
+    "updated_at": "2026-01-01T10:00:00Z"
   }
 }
-
-GET /companies/stats/ (custom action):
-{
-  "total": 123
-}
-"""
 ```
-See the [Quick Start guide](quick-start.md) for a complete working example
+
+Example custom action response:
+
+```json
+{
+  "total": 123,
+  "called_cache": 4
+}
+```
 
 ## ✨ Key Features
 
 <div class="feature-card">
   <h3>🎯 ViewSets</h3>
-Django-like ViewSets with automatic CRUD operations and custom actions. Build complete REST APIs with minimal boilerplate code.
+Django-like ViewSets with automatic CRUD routes and custom actions. Keep API behavior close to the resource it belongs to.
 </div>
 
 <div class="feature-card">
-<h3>🔒 Permissions</h3>
-Built-in permission system with customizable access control. Protect your endpoints with authentication and authorization rules.
+  <h3>📋 Explicit Schemas</h3>
+Write normal Pydantic models and bind them to Tortoise ORM models with `@schema(Model)`. Your API contract stays visible in code.
 </div>
 
 <div class="feature-card">
-<h3>📄 Pagination</h3>
-Multiple pagination strategies out of the box: Limit/Offset and Page Number. Easily customizable for your needs.
+  <h3>🔍 Filters & Ordering</h3>
+Expose typed FastAPI query parameters and turn them into Tortoise queryset filters.
 </div>
 
 <div class="feature-card">
-<h3>📋 Schema Generation</h3>
-Intelligent schema generation with meta classes for fine-grained control over API serialization.
+  <h3>📄 Pagination</h3>
+Use page-number or limit-offset pagination with response metadata.
 </div>
 
 <div class="feature-card">
-<h3>🔄 Response Wrappers</h3>
-Consistent API response formatting with customizable wrapper classes.
+  <h3>🔄 Response Wrappers</h3>
+Standardize response shapes for list, detail, create, and update endpoints.
 </div>
 
 <div class="feature-card">
-<h3>⚡ State Management</h3>
-Request-scoped state management for sharing data across middleware and view components.
+  <h3>🔒 Permissions & State</h3>
+Use request-scoped state and permission classes for authentication-aware APIs.
+</div>
+
+<div class="feature-card">
+  <h3>⚡ Cache</h3>
+Use in-memory cache locally and Redis-backed cache when you need shared storage.
 </div>
 
 ## 🎯 Philosophy
 
 FastAPI Ronin is designed with these principles:
 
-- **Familiar**: If you know Django REST Framework, you already know FastAPI Ronin
-- **Flexible**: Customize every aspect while maintaining sensible defaults
-- **Fast**: Built on FastAPI's high-performance foundation
-- **Modular**: Use only what you need, when you need it
+- **Familiar**: If you know Django REST Framework, ViewSets and permissions will feel natural.
+- **Explicit**: Schemas are real Python classes, not hidden dynamic output.
+- **Flexible**: Use only the pieces you need: ViewSets, filters, wrappers, permissions, cache, or state.
+- **Fast**: Built on FastAPI, async Python, and Tortoise ORM.
+- **Modular**: Start in one file, then move to a domain architecture when the app grows.
 
 ## 📚 Getting Started
 
-Ready to build amazing APIs? Start with our [Quick Start guide](quick-start.md) to get up and running in minutes.
+Ready to build a scalable project layout? Start with the
+[Quick Start guide](quick-start.md).
 
-Want to dive deeper? Explore our comprehensive guides:
+Want to dive deeper?
 
-- [ViewSets](viewsets/index.md) - Learn about the core ViewSet concepts
-- [Schemas & Meta](schemas.md) - Master schema generation and meta classes
-- [Permissions](permissions.md) - Secure your APIs with permission classes
-- [Pagination](pagination.md) - Implement efficient data pagination
-- [State Management](state.md) - Manage request-scoped state
-- [Response Wrappers](wrappers.md) - Format consistent API responses
+- [ViewSets](viewsets/index.md) - core ViewSet concepts
+- [Schemas](schemas.md) - explicit request and response models
+- [Filters](filters.md) - query parameters and lookup expressions
+- [Cache](cache.md) - in-memory and Redis-backed cache
+- [Permissions](permissions.md) - authentication-aware access rules
+- [Pagination](pagination.md) - page-number and limit-offset pagination
+- [State Management](state.md) - request-scoped state
+- [Response Wrappers](wrappers.md) - consistent API responses
 
 ## 🤝 Community
 
-FastAPI Ronin is open source and welcomes contributions! Whether you're reporting bugs, suggesting features, or submitting pull requests, your involvement helps make the library better for everyone.
+FastAPI Ronin is open source. Issues, ideas, documentation improvements, and
+pull requests all help shape the library.
 
 - **GitHub**: [github.com/bubaley/fastapi-ronin](https://github.com/bubaley/fastapi-ronin)
-- **Issues**: Report bugs and request features
-- **Discussions**: Get help and share ideas
+- **Issues**: Report bugs or request features
+- **Discussions**: Ask questions and share patterns
 
 ## 📄 License
 

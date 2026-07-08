@@ -26,7 +26,7 @@ def check_mkdocs_build() -> bool:
     """Check if MkDocs can build successfully."""
     print('🔨 Testing MkDocs build...')
 
-    exit_code, stdout, stderr = run_command(['uv', 'run', 'mkdocs', 'build', '--clean', '--strict'])
+    exit_code, stdout, stderr = run_command(['uv', 'run', '--group', 'docs', 'mkdocs', 'build', '--clean', '--strict'])
 
     if exit_code == 0:
         print('✅ MkDocs build successful')

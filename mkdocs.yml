@@ -56,7 +56,8 @@ nav:
         - Lookups: viewsets/lookups.md
         - Generics & Mixins: viewsets/generics-mixins.md
     - Filters: filters.md
-    - Schemas & Meta: schemas.md
+    - Schemas: schemas.md
+    - Cache: cache.md
     - Permissions: permissions.md
     - Pagination: pagination.md
     - State Management: state.md

@@ -191,3 +191,11 @@ pre .md-code__content,
 .admonition-title {
   padding: 0.7rem 2.3rem !important;
 }
+
+.md-code__nav {
+  border-radius: 8px !important;
+}
+
+.highlight + .highlight {
+  margin-top: 24px;
+}

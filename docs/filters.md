@@ -1,48 +1,51 @@
 ---
-title: FastAPI Filters — Powerful QuerySet Filtering with FastAPI Ronin
-description: Master FastAPI Ronin's advanced filtering system for building complex API queries. Leverage Django ORM-inspired lookups, custom filter types, and automatic query parameter generation for efficient data retrieval.
-keywords: FastAPI filters, API filtering, QuerySet filtering, Django ORM lookups, FastAPI Ronin, Python API development, query parameters, REST API filtering, data filtering, search functionality
+title: FastAPI Ronin Filters — Query Parameters for Tortoise ORM
+description: Build typed query parameters for FastAPI Ronin ViewSets and apply them to Tortoise ORM querysets with filters, lookups, custom methods, and ordering.
+keywords: FastAPI filters, Tortoise ORM filters, FastAPI Ronin, query parameters, ordering, REST API filtering
 ---
 
-# API Filters: Advanced QuerySet Filtering
+# Filters
 
-FastAPI Ronin provides a powerful filtering system that allows you to create sophisticated query interfaces for your API endpoints. The system is inspired by Django ORM lookups and provides automatic query parameter generation, type validation, and QuerySet filtering.
+Filters turn query parameters into Tortoise ORM queryset operations. You define a
+`FilterSet`, attach it to a ViewSet, and Ronin exposes typed FastAPI query
+parameters automatically.
 
-## Overview
-
-The filtering system consists of:
-
-1. **Filter Classes** - Define individual filter fields with specific types and behaviors
-2. **FilterSet Classes** - Group multiple filters for a model
-3. **Lookup Types** - Various comparison operators (exact, contains, gte, etc.)
-4. **Automatic Integration** - Seamless integration with ViewSets and FastAPI
-
-## Quick Start
-
-Here's a simple example of creating and using filters:
+## Quick Example
 
 ```python
-from fastapi_ronin import filters
-from app.models import Company, CompanyStatusEnum
+from tortoise.expressions import Q
+from tortoise.queryset import QuerySet
 
-class CompanyFilterSet(filters.FilterSet):
+from app.domains.company.models import Company
+from fastapi_ronin.filters import CharFilter, DateTimeFilter, FilterSet, OrderingFilter, Parameter
+
+
+class CompanyFilterSet(FilterSet):
     fields = [
-        filters.CharFilter('name', view_name='search', default_lookup='icontains'),
-        filters.IntegerFilter('id', lookups=['in', 'gte', 'lte']),
-        filters.BooleanFilter('is_active', exclude=True),
-        filters.ChoiceFilter('status', choices=CompanyStatusEnum),
+        CharFilter(field_name='name', view_name='search_by_name', lookup_expr='icontains'),
+        CharFilter(field_name='search', method='filter_by_search'),
+        DateTimeFilter(field_name='created_at', lookups=['gte', 'lte', 'exact']),
+        DateTimeFilter(field_name='updated_at', lookups=['gte', 'lte', 'exact']),
     ]
+    ordering = OrderingFilter(
+        fields=(
+            'name',
+            ('created', 'created_at'),
+            ('updated', 'updated_at'),
+        ),
+        default=('-created',),
+    )
+
+    def filter_by_search(self, queryset: QuerySet[Company], value: str, parameter: Parameter):
+        return queryset.filter(Q(name__icontains=value) | Q(full_name__icontains=value))
 
     class Meta:
         model = Company
 ```
 
-Then in your ViewSet:
+Attach it to a ViewSet:
 
 ```python
-from fastapi_ronin.decorators import viewset
-from fastapi_ronin.viewsets import ModelViewSet
-
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
     model = Company
@@ -51,258 +54,146 @@ class CompanyViewSet(ModelViewSet[Company]):
     filterset_class = CompanyFilterSet
 ```
 
-This automatically generates query parameters like:
-- `?search=acme` (searches for companies containing "acme" in name)
-- `?id__in=1,2,3` (companies with IDs 1, 2, or 3)
-- `?id__gte=10` (companies with ID >= 10)
-- `?is_active=true` (active companies only)
-- `?status=active` (companies with active status)
+Example requests:
+
+```text
+GET /companies/?search_by_name=acme
+GET /companies/?search=acme
+GET /companies/?created_at__gte=2026-01-01T00:00:00
+GET /companies/?ordering=-updated
+```
 
 ## Filter Types
 
-### CharFilter
+| Filter | Python Type | Common Lookups |
+|--------|-------------|----------------|
+| `CharFilter` | `str` | `exact`, `iexact`, `contains`, `icontains`, `startswith`, `istartswith`, `endswith`, `iendswith`, `in`, `isnull` |
+| `IntegerFilter` | `int` | `exact`, `gt`, `gte`, `lt`, `lte`, `in`, `isnull` |
+| `FloatFilter` | `float` | `exact`, `gt`, `gte`, `lt`, `lte`, `in`, `isnull` |
+| `BooleanFilter` | `bool` | `exact`, `isnull` |
+| `DateFilter` | `date` | `exact`, `gt`, `gte`, `lt`, `lte`, `in`, `isnull`, `year`, `month`, `day` |
+| `DateTimeFilter` | `datetime` | date lookups plus `hour`, `minute`, `second` |
+| `UUIDFilter` | `UUID` | `exact`, `in`, `isnull` |
+| `ChoiceFilter` | enum | `exact` by default |
 
-For text-based filtering:
+## Parameter Naming
+
+By default, exact filters use the field name:
 
 ```python
-filters.CharFilter('name', lookups=['exact', 'icontains', 'startswith'])
+CharFilter(field_name='name')
 ```
 
-**Available lookups**: `exact`, `iexact`, `contains`, `icontains`, `startswith`, `istartswith`, `endswith`, `iendswith`, `in`, `isnull`
-
-### IntegerFilter
-
-For numeric filtering:
-
-```python
-filters.IntegerFilter('age', lookups=['gte', 'lte', 'in'])
+```text
+GET /companies/?name=Acme
 ```
 
-**Available lookups**: `exact`, `gt`, `gte`, `lt`, `lte`, `in`, `isnull`
-
-### FloatFilter
-
-For decimal number filtering:
+Multiple lookups add a suffix:
 
 ```python
-filters.FloatFilter('price', lookups=['gte', 'lte'])
+IntegerFilter(field_name='id', lookups=['in', 'gte', 'lte'])
 ```
 
-**Available lookups**: `exact`, `gt`, `gte`, `lt`, `lte`, `in`, `isnull`
-
-### BooleanFilter
-
-For boolean field filtering:
-
-```python
-filters.BooleanFilter('is_active', default_lookup='exact')
+```text
+GET /companies/?id__in=1,2,3
+GET /companies/?id__gte=10
+GET /companies/?id__lte=100
 ```
 
-**Available lookups**: `exact`, `isnull`
-
-### DateFilter & DateTimeFilter
-
-For date and datetime filtering:
+Use `view_name` to expose a different query parameter name:
 
 ```python
-filters.DateFilter('created_date', lookups=['gte', 'lte', 'year'])
-filters.DateTimeFilter('updated_at', lookups=['gte', 'lte'])
+CharFilter(field_name='name', view_name='q', lookup_expr='icontains')
 ```
 
-**Available lookups**: `exact`, `gt`, `gte`, `lt`, `lte`, `in`, `isnull`, `year`, `month`, `day`
-
-For DateTimeFilter also: `hour`, `minute`, `second`
-
-### UUIDFilter
-
-For UUID field filtering:
-
-```python
-filters.UUIDFilter('uuid', lookups=['exact', 'in'])
+```text
+GET /companies/?q=acme
 ```
 
-**Available lookups**: `exact`, `in`, `isnull`
+`lookup_expr` is a convenience alias for the default lookup. It keeps the query
+parameter short while applying a non-exact lookup. `default_lookup` is still
+accepted for compatibility.
 
-### ChoiceFilter
+## Custom Filter Methods
 
-For enum/choice field filtering:
-
-```python
-from enum import Enum
-
-class CompanyStatus(str, Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    PENDING = "pending"
-
-filters.ChoiceFilter('status', choices=CompanyStatus)
-```
-
-## Lookup Types Explained
-
-### Text Lookups
-
-- `exact` - Exact match (case-sensitive)
-- `iexact` - Exact match (case-insensitive)
-- `contains` - Contains substring (case-sensitive)
-- `icontains` - Contains substring (case-insensitive)
-- `startswith` - Starts with text (case-sensitive)
-- `istartswith` - Starts with text (case-insensitive)
-- `endswith` - Ends with text (case-sensitive)
-- `iendswith` - Ends with text (case-insensitive)
-
-### Comparison Lookups
-
-- `gt` - Greater than
-- `gte` - Greater than or equal
-- `lt` - Less than
-- `lte` - Less than or equal
-
-### List & Null Lookups
-
-- `in` - Value is in list (comma-separated for strings)
-- `isnull` - Field is null (true) or not null (false)
-
-### Date/Time Lookups
-
-- `year` - Extract year from date/datetime
-- `month` - Extract month from date/datetime
-- `day` - Extract day from date/datetime
-- `hour` - Extract hour from datetime
-- `minute` - Extract minute from datetime
-- `second` - Extract second from datetime
-
-## Advanced Features
-
-### Default Lookup
-
-Set a default lookup to simplify parameter names:
+Use `method` when one parameter needs custom queryset logic:
 
 ```python
-# Without default_lookup: ?name__icontains=acme
-filters.CharFilter('name', lookups=['exact', 'icontains'])
-
-# With default_lookup: ?search=acme (uses icontains by default)
-filters.CharFilter('name', view_name='search', default_lookup='icontains', lookups=['exact', 'icontains'])
-```
-
-### Custom Parameter Names
-
-Use `view_name` to customize query parameter names:
-
-```python
-filters.CharFilter('company_name', view_name='name')
-# Creates parameter: ?name=acme instead of ?company_name=acme
-```
-
-### Exclude (Negation)
-
-Use `exclude=True` to invert the filter logic:
-
-```python
-filters.BooleanFilter('is_deleted', exclude=True, default_lookup='exact')
-# ?is_deleted=true will filter for records where is_deleted != true
-```
-
-### Required Filters
-
-Make filters mandatory:
-
-```python
-filters.CharFilter('category', required=True)
-# API will return error if category parameter is not provided
-```
-
-### Multiple Lookups
-
-Enable multiple filtering options for the same field:
-
-```python
-filters.IntegerFilter('price', lookups=['exact', 'gte', 'lte', 'in'])
-```
-
-This generates parameters:
-- `?price=100` (exact match)
-- `?price__gte=50` (price >= 50)
-- `?price__lte=200` (price <= 200)
-- `?price__in=100,150,200` (price in list)
-
-## Complex Filtering Examples
-
-### E-commerce Product Filtering
-
-```python
-class ProductFilterSet(filters.FilterSet):
+class CompanyFilterSet(FilterSet):
     fields = [
-        # Text search in name and description
-        filters.CharFilter('name', view_name='search', default_lookup='icontains'),
-
-        # Price range filtering
-        filters.FloatFilter('price', lookups=['gte', 'lte']),
-
-        # Category selection
-        filters.ChoiceFilter('category', choices=ProductCategory),
-
-        # Availability filtering
-        filters.BooleanFilter('in_stock'),
-
-        # Date filtering
-        filters.DateFilter('created_at', lookups=['gte', 'lte', 'year']),
-
-        # Brand filtering (multiple selection)
-        filters.IntegerFilter('brand_id', lookups=['in']),
-
-        # Exclude out-of-stock items
-        filters.BooleanFilter('is_available', exclude=True, default_lookup='isnull'),
+        CharFilter(field_name='search', method='filter_by_search'),
     ]
 
-    class Meta:
-        model = Product
-```
-
-Usage examples:
-- `?search=laptop` - Search for laptops
-- `?price__gte=500&price__lte=2000` - Price between $500-$2000
-- `?category=electronics&in_stock=true` - Electronics in stock
-- `?brand_id__in=1,3,5` - Products from brands 1, 3, or 5
-- `?created_at__year=2024` - Products created in 2024
-
-### User Filtering with Relationships
-
-```python
-class UserFilterSet(filters.FilterSet):
-    fields = [
-        # Basic user info
-        filters.CharFilter('email', lookups=['exact', 'icontains']),
-        filters.CharFilter('first_name', view_name='name', default_lookup='icontains'),
-
-        # Age filtering
-        filters.IntegerFilter('age', lookups=['gte', 'lte']),
-
-        # Status filtering
-        filters.BooleanFilter('is_active'),
-        filters.ChoiceFilter('role', choices=UserRole),
-
-        # Registration date
-        filters.DateTimeFilter('created_at', lookups=['gte', 'lte']),
-
-        # Relationship filtering (requires proper model setup)
-        filters.IntegerFilter('company_id', lookups=['exact', 'in']),
-    ]
+    def filter_by_search(self, queryset: QuerySet[Company], value: str, parameter: Parameter):
+        return queryset.filter(Q(name__icontains=value) | Q(full_name__icontains=value))
 
     class Meta:
-        model = User
+        model = Company
 ```
 
-## Integration with ViewSets
+The method receives the current queryset, the parsed value, and the generated
+parameter metadata.
 
-### Basic Integration
+## Negation
+
+Use `exclude=True` to invert a filter:
 
 ```python
-@viewset(router)
-class CompanyViewSet(ModelViewSet[Company]):
-    model = Company
-    read_schema = CompanySchema
-    create_schema = CompanyCreateSchema
-    filterset_class = CompanyFilterSet  # Add your FilterSet here
+BooleanFilter(field_name='archived', exclude=True)
 ```
+
+```text
+GET /companies/?archived__not_exact=true
+```
+
+For a shorter negated parameter, use `default_lookup='not_exact'`:
+
+```python
+BooleanFilter(field_name='archived', exclude=True, default_lookup='not_exact')
+```
+
+```text
+GET /companies/?archived=true
+```
+
+## Ordering
+
+`OrderingFilter` maps public ordering names to model fields.
+
+```python
+ordering = OrderingFilter(
+    fields=(
+        'name',
+        ('created', 'created_at'),
+        ('updated', 'updated_at'),
+    ),
+    default=('-created',),
+)
+```
+
+```text
+GET /companies/?ordering=name
+GET /companies/?ordering=-updated
+GET /companies/?ordering=name,-created
+```
+
+If no `ordering` parameter is provided, Ronin uses the filter default. If there
+is no filter default, it falls back to the model `Meta.ordering` when available.
+
+## Required Parameters
+
+Set `required=True` when a filter must be present:
+
+```python
+CharFilter(field_name='tenant_id', required=True)
+```
+
+FastAPI will document and validate the required query parameter.
+
+## Design Guidance
+
+- Keep public query names stable even if model field names change.
+- Use `lookup_expr` for the common “short parameter with non-exact lookup” case.
+- Use explicit `lookups` when the API should expose several operators.
+- Use custom methods for search boxes and business-specific filtering.
+- Define filters in the same domain as the ViewSet that uses them.

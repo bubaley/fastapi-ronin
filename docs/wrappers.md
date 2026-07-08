@@ -1,159 +1,131 @@
 ---
-title: FastAPI Response Wrappers — Standardize API Responses with FastAPI Ronin
-description: Use FastAPI Ronin response wrappers to create consistent, standardized API response formats. Easily include pagination, metadata, and uniform structures across your REST API.
-keywords: FastAPI response wrappers, API response formatting, FastAPI Ronin, REST API consistency, response structure standardization, API metadata, pagination response, Python API best practices
+title: FastAPI Ronin Response Wrappers — Consistent API Responses
+description: Use FastAPI Ronin response wrappers to return consistent data envelopes and pagination metadata from ViewSet endpoints.
+keywords: FastAPI response wrappers, FastAPI Ronin, API response envelope, pagination metadata
 ---
 
-# FastAPI Response Wrappers: Standardize Your API Responses
+# Response Wrappers
 
-FastAPI Ronin’s response wrappers help you standardize API response formats by wrapping data in a consistent structure. They support adding metadata, pagination details, and ensure uniform responses throughout your REST API for better client integration and maintainability.
+Wrappers define the outer shape of API responses. They are optional, but they
+make client code easier when every endpoint returns a predictable envelope.
 
-## Overview
+## Built-In Wrappers
 
-FastAPI Ronin provides two types of response wrappers:
+| Wrapper | Use For | Shape |
+|---------|---------|-------|
+| `ResponseDataWrapper` | single object responses | `{"data": {...}}` |
+| `ListDataWrapper` | non-paginated list responses | `{"data": [...]}` |
+| `PaginatedResponseDataWrapper` | paginated list responses | `{"data": [...], "meta": {...}}` |
 
-1. **ResponseWrapper** - For single objects and simple responses
-2. **PaginatedResponseWrapper** - For paginated list responses with metadata
-
-## Basic Response Wrappers
-
-### ResponseDataWrapper
-
-The most basic wrapper that puts data in a 'data' field:
+## Single Object Wrapper
 
 ```python
 from fastapi_ronin.wrappers import ResponseDataWrapper
 
+
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
     model = Company
-    read_schema = CompanyReadSchema
+    read_schema = CompanySchema
     create_schema = CompanyCreateSchema
 
-    # Wrap single object responses
     single_wrapper = ResponseDataWrapper
 ```
 
-**Response format:**
 ```json
 {
   "data": {
     "id": 1,
-    "name": "Acme Corp",
-    "description": "A great company"
+    "name": "Acme"
   }
 }
 ```
 
-### PaginatedResponseDataWrapper
+`single_wrapper` is used for retrieve, create, and update responses.
 
-For paginated list responses with metadata:
+## Paginated List Wrapper
 
 ```python
-from fastapi_ronin.wrappers import PaginatedResponseDataWrapper
 from fastapi_ronin.pagination import PageNumberPagination
+from fastapi_ronin.wrappers import PaginatedResponseDataWrapper
+
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
-    model = Company
-    read_schema = CompanyReadSchema
-    create_schema = CompanyCreateSchema
-
-    # Wrap list response
     pagination = PageNumberPagination
     list_wrapper = PaginatedResponseDataWrapper
 ```
 
-**Response format:**
 ```json
 {
   "data": [
-    {"id": 1, "name": "Company A"},
-    {"id": 2, "name": "Company B"}
+    {"id": 1, "name": "Acme"}
   ],
   "meta": {
     "page": 1,
     "size": 10,
-    "total": 25,
-    "pages": 3
+    "total": 1,
+    "pages": 1
   }
 }
 ```
 
-## Custom Response Wrappers
+## Plain List Wrapper
 
-### Custom Wrapper
-
-Create your own wrapper for consistent API responses:
+Use `ListDataWrapper` when pagination is disabled but you still want a `data`
+envelope.
 
 ```python
-from fastapi_ronin.wrappers import ResponseWrapper
+from fastapi_ronin.pagination import DisabledPagination
+from fastapi_ronin.wrappers import ListDataWrapper
+
+
+@viewset(router)
+class CompanyViewSet(ModelViewSet[Company]):
+    pagination = DisabledPagination
+    list_wrapper = ListDataWrapper
+```
+
+## Custom Single Wrapper
+
+```python
 from datetime import datetime
+
 from fastapi_ronin.types import T
+from fastapi_ronin.wrappers import ResponseWrapper
 
 
-class ApiResponseWrapper(ResponseWrapper[T]):
-    """Standard API response format"""
-
+class ApiResponse(ResponseWrapper[T]):
+    data: T
     success: bool
-    # data: T
-    custom_data: T
     timestamp: str
 
     @classmethod
-    def wrap(cls, data: T, **kwargs) -> "ApiResponseWrapper":
-        return cls(
-            success=True,
-            custom_data=data,
-            timestamp=datetime.now().isoformat(),
-        )
+    def wrap(cls, data: T, **kwargs) -> 'ApiResponse':
+        return cls(data=data, success=True, timestamp=datetime.now().isoformat())
 ```
 
-**Response format:**
-```json
-{
-  "success": true,
-  "custom_data": {
-    "id": 1,
-    "name": "Acme Corp"
-  },
-  "timestamp": "2024-01-15T10:30:00Z"
-}
-```
-
-### Custom Paginated Wrapper
-
-Create a wrapper with additional metadata:
+## Custom Paginated Wrapper
 
 ```python
-from fastapi_ronin.wrappers import PaginatedResponseWrapper
 from fastapi_ronin.pagination import PageNumberPagination
-from typing import List
 from fastapi_ronin.types import T
+from fastapi_ronin.wrappers import PaginatedResponseWrapper
 
 
-class CustomPaginatedWrapper(PaginatedResponseWrapper[T, PageNumberPagination]):
-    """Enhanced paginated response"""
-
-    items: List[T]
-    # data: List[T]
+class ApiPage(PaginatedResponseWrapper[T, PageNumberPagination]):
+    items: list[T]
     total: int
+    page: int
 
     @classmethod
-    def wrap(cls, data: List[T], pagination: PageNumberPagination, **kwargs) -> "CustomPaginatedWrapper":
-        return cls(
-            items=data,
-            total=pagination.total,
-        )
+    def wrap(cls, data: list[T], pagination: PageNumberPagination, **kwargs) -> 'ApiPage':
+        return cls(items=data, total=pagination.total, page=pagination.page)
 ```
 
-**Response format:**
-```json
-{
-  "items": [
-    {"id": 1, "name": "Company A"},
-    {"id": 2, "name": "Company B"}
-  ],
-  "total": 2
-}
-```
+## Guidance
+
+- Use wrappers from the start if API consistency matters.
+- Pair `PaginatedResponseDataWrapper` with a real pagination class.
+- Use `ListDataWrapper` only for non-paginated lists.
+- Keep wrapper fields stable; clients will depend on them.

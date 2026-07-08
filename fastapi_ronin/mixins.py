@@ -69,7 +69,7 @@ class RetrieveMixin(Generic[ModelType]):
             if not self.read_schema:
                 raise ValueError('Read schema is not set')
             result = await self.read_schema.from_tortoise_orm(obj)
-            return self.get_sigle_response(result)
+            return self.get_single_response(result)
 
         add_wrapped_route(
             viewset=self,
@@ -105,7 +105,7 @@ class CreateMixin(Generic[ModelType]):
             if not self.read_schema:
                 raise ValueError('Read schema is not set')
             result = await self.read_schema.from_tortoise_orm(obj)
-            return self.get_sigle_response(result)
+            return self.get_single_response(result)
 
         add_wrapped_route(
             viewset=self,
@@ -148,7 +148,7 @@ class UpdateMixin(Generic[ModelType]):
             if not self.read_schema:
                 raise ValueError('Read schema is not set')
             result = await self.read_schema.from_tortoise_orm(obj)
-            return self.get_sigle_response(result)
+            return self.get_single_response(result)
 
         add_wrapped_route(
             viewset=self,

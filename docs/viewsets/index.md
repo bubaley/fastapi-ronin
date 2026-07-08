@@ -1,175 +1,110 @@
 ---
-title: FastAPI ViewSets — Django REST Framework Patterns with FastAPI Ronin
-description: Master FastAPI Ronin ViewSets to build REST APIs using Django REST Framework-inspired patterns. Benefit from automatic CRUD, custom actions, and flexible configuration for scalable APIs.
-keywords: FastAPI ViewSets, Django REST Framework ViewSets, REST API patterns, CRUD operations, FastAPI Ronin, Python API development, custom ViewSet actions, scalable REST APIs
+title: FastAPI Ronin ViewSets — CRUD APIs with FastAPI and Tortoise ORM
+description: Use FastAPI Ronin ViewSets to group CRUD routes, schemas, filters, permissions, pagination, wrappers, and custom actions around one Tortoise model.
+keywords: FastAPI ViewSets, FastAPI Ronin, Tortoise ORM, CRUD APIs, Django REST Framework patterns
 ---
 
-# FastAPI ViewSets: Django REST Framework Patterns with FastAPI Ronin
+# ViewSets
 
-ViewSets are central to FastAPI Ronin, offering a Django REST Framework-inspired approach to building REST APIs. They provide automatic CRUD operations, custom actions, and flexible configuration options, making it easy for Django developers to build high-performance APIs with FastAPI.
-
-## What are ViewSets?
-
-A ViewSet is a class-based view that groups related actions for a specific resource. Instead of writing separate functions for each HTTP operation, you define a single ViewSet class that handles all operations for your model.
-
-## Basic ViewSet Structure
+ViewSets are the center of FastAPI Ronin. A ViewSet groups the API behavior for
+one resource: model, schemas, queryset, filters, permissions, pagination,
+wrappers, lifecycle hooks, and custom actions.
 
 ```python
 from fastapi import APIRouter
 from fastapi_ronin.decorators import viewset
+from fastapi_ronin.pagination import PageNumberPagination
 from fastapi_ronin.viewsets import ModelViewSet
+from fastapi_ronin.wrappers import PaginatedResponseDataWrapper, ResponseDataWrapper
+
 
 router = APIRouter(prefix='/companies', tags=['companies'])
 
-@viewset(router)
-class CompanyViewSet(ModelViewSet[Company]):
-    model = Company                     # The Tortoise ORM model to use for this ViewSet
-    read_schema = CompanyReadSchema     # Pydantic schema for serializing response data (read operations)
-    create_schema = CompanyCreateSchema # Pydantic schema for validating and deserializing input data (create/update)
-
-    # Optional configurations
-    pagination = PageNumberPagination   # Pagination class to use for list endpoints (default: DisabledPagination)
-    permission_classes = [IsAuthenticatedOrReadOnly] # List of permission classes for access control
-    list_wrapper = PaginatedResponseDataWrapper      # Wrapper class for formatting paginated list responses
-    single_wrapper = ResponseDataWrapper            # Wrapper class for formatting single object responses
-```
-
-## ViewSet Types
-
-FastAPI Ronin provides two main ViewSet types:
-
-### ModelViewSet
-
-Provides full CRUD operations:
-
-- **List** (`GET /resources/`) - Get paginated list of resources
-- **Create** (`POST /resources/`) - Create new resource
-- **Retrieve** (`GET /resources/{item_id}/`) - Get specific resource
-- **Update** (`PUT /resources/{item_id}/`) - Update resource
-- **Destroy** (`DELETE /resources/{item_id}/`) - Delete resource
-
-```python
-from fastapi_ronin.viewsets import ModelViewSet
 
 @viewset(router)
 class CompanyViewSet(ModelViewSet[Company]):
     model = Company
-    read_schema = CompanyReadSchema
     create_schema = CompanyCreateSchema
+    read_schema = CompanySchema
+
+    pagination = PageNumberPagination
+    list_wrapper = PaginatedResponseDataWrapper
+    single_wrapper = ResponseDataWrapper
+    filterset_class = CompanyFilterSet
 ```
 
-### ReadOnlyViewSet
+## What Routes Are Added
 
-Provides only read operations:
+`ModelViewSet` adds a full CRUD surface:
 
-- **List** (`GET /resources/`) - Get paginated list of resources
-- **Retrieve** (`GET /resources/{item_id}/`) - Get specific resource
+| Action | Method | Path |
+|--------|--------|------|
+| `list` | `GET` | `/companies/` |
+| `create` | `POST` | `/companies/` |
+| `retrieve` | `GET` | `/companies/{item_id}/` |
+| `update` | `PUT`, `PATCH` | `/companies/{item_id}/` |
+| `destroy` | `DELETE` | `/companies/{item_id}/` |
+
+`ReadOnlyViewSet` adds only `list` and `retrieve`.
+
+## Core Configuration
+
+| Attribute | Required | Description |
+|-----------|----------|-------------|
+| `model` | yes | Tortoise ORM model used by the ViewSet. |
+| `create_schema` | for create/update | Pydantic model for request bodies. |
+| `update_schema` | optional | Defaults to `create_schema`. |
+| `read_schema` | for detail responses | Pydantic model for single object responses. |
+| `many_read_schema` | optional | Defaults to `read_schema`; useful for smaller list payloads. |
+| `filterset_class` | optional | `FilterSet` used by list endpoints. |
+| `pagination` | optional | Defaults to `DisabledPagination`. |
+| `list_wrapper` | optional | Wrapper for list responses. |
+| `single_wrapper` | optional | Wrapper for detail/create/update responses. |
+| `permission_classes` | optional | Permission classes instantiated per request. |
+| `lookup_class` | optional | URL parameter type, default `IntegerLookup`. |
+| `lookup_field` | optional | Model field used by `get_object()`, default `id`. |
+| `trailing_slash` | optional | Route slash behavior: `strip`, `append`, or `ignore`. |
+
+## Schema Fallbacks
+
+Ronin fills missing schema pairs:
+
+- `update_schema` defaults to `create_schema`;
+- `create_schema` defaults to `update_schema`;
+- `many_read_schema` defaults to `read_schema`;
+- `read_schema` defaults to `many_read_schema`.
+
+Use this to keep simple ViewSets compact, but define separate schemas when list,
+detail, create, and update payloads differ.
+
+## Querysets
+
+Override `get_queryset()` for tenant filtering, soft deletes, or prefetching.
 
 ```python
-from fastapi_ronin.viewsets import ReadOnlyViewSet
-
-@viewset(router)
-class CompanyViewSet(ReadOnlyViewSet[Company]):
-    model = Company
-    read_schema = CompanyReadSchema
+def get_queryset(self):
+    queryset = Company.filter(active=True)
+    if self.user:
+        return queryset.filter(owner_id=self.user['id'])
+    return queryset.filter(public=True)
 ```
 
-## ViewSet Configuration
+`get_queryset()` may be sync or async.
 
-### Required Attributes
+## Request Context
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `model` | `Type[Model]` | The Tortoise ORM model class associated with this ViewSet. |
-| `read_schema` | `Type[PydanticModel]` | Pydantic schema used for serializing response data (read operations). |
+Inside a ViewSet you can access:
 
-### Optional Attributes
+| Property | Description |
+|----------|-------------|
+| `self.request` | Current FastAPI request. |
+| `self.user` | User stored in Ronin state. |
+| `self.action` | Current action name, such as `list` or `create`. |
+| `self.state` | Request-scoped state manager. |
 
-| Attribute | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `create_schema` | `Type[PydanticModel]` | `None` | Pydantic schema for validating and deserializing input data when creating resources. |
-| `update_schema` | `Type[PydanticModel]` | `create_schema` | Pydantic schema for validating and deserializing input data when updating resources. Defaults to `create_schema` if not set. |
-| `many_read_schema` | `Type[PydanticModel]` | `read_schema` | Pydantic schema for serializing list responses. Defaults to `read_schema`. |
-| `pagination` | `Type[Pagination]` | `DisabledPagination` | Pagination strategy class for list endpoints. |
-| `permission_classes` | `List[Type[BasePermission]]` | `[]` | List of permission classes for access control. |
-| `list_wrapper` | `Type[ResponseWrapper]` | `None` | Wrapper class for formatting paginated list responses. |
-| `single_wrapper` | `Type[ResponseWrapper]` | `None` | Wrapper class for formatting single object responses. |
+## Extending Behavior
 
-## Schema Configuration
-
-ViewSets use different schemas for different operations:
-
-```python
-@viewset(router)
-class CompanyViewSet(ModelViewSet[Company]):
-    model = Company
-
-    # For reading data (GET operations)
-    read_schema = CompanyReadSchema
-    many_read_schema = CompanyListSchema  # Optional, defaults to read_schema
-
-    # For writing data (POST/PUT operations)
-    create_schema = CompanyCreateSchema
-    update_schema = CompanyUpdateSchema  # Optional, defaults to create_schema
-```
-
-!!! tip "Schema Fallbacks"
-    FastAPI Ronin provides sensible fallbacks:
-
-    - `update_schema` defaults to `create_schema`
-    - `create_schema` defaults to `update_schema`
-    - `many_read_schema` defaults to `read_schema`
-
-## Customizing Queries
-
-Override the `get_queryset()` method to customize the base queryset:
-
-```python
-@viewset(router)
-class CompanyViewSet(ModelViewSet[Company]):
-    model = Company
-    read_schema = CompanyReadSchema
-    create_schema = CompanyCreateSchema
-
-    def get_queryset(self):
-        # Filter based on user authentication
-        if not self.user:
-            return Company.filter(is_public=True)
-
-        # Show user's own companies and public ones
-        return Company.filter(
-            Q(owner=self.user) | Q(is_public=True)
-        )
-```
-
-## Accessing Request Context
-
-ViewSets provide easy access to request context:
-
-```python
-@viewset(router)
-class CompanyViewSet(ModelViewSet[Company]):
-    model = Company
-    read_schema = CompanyReadSchema
-    create_schema = CompanyCreateSchema
-
-    def get_queryset(self):
-        # Access current user
-        user = self.user
-
-        # Access current request
-        request = self.request
-
-        # Access current action
-        action = self.action  # 'list', 'create', 'retrieve', etc.
-
-        return Company.all()
-```
-
-## Next Steps
-
-Now that you understand the basics of ViewSets, explore these advanced topics:
-
-- **[Lifecycle Hooks](lifecycle-hooks.md)** - Customize object processing
-- **[Actions](actions.md)** - Add custom endpoints to your ViewSets
-- **[Generics & Mixins](generics-mixins.md)** - Learn about the underlying architecture
+- Use [lifecycle hooks](lifecycle-hooks.md) for validation and save/delete behavior.
+- Use [custom actions](actions.md) for endpoints outside CRUD.
+- Use [lookups](lookups.md) for slug, UUID, or custom URL parameters.
+- Use [generics and mixins](generics-mixins.md) to understand the internal composition.
