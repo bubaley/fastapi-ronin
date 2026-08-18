@@ -285,7 +285,7 @@ class FilterSetMeta(Type):
 
 
 class FilterSet(metaclass=FilterSetMeta):
-    fields: List[Filter] = []
+    fields: Iterable[Filter] = tuple()
 
     def __init__(self, data: Optional[Dict[str, Any]] = None):
         self.data = data or {}
