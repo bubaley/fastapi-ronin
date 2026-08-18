@@ -1,4 +1,5 @@
 import inspect
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import Enum
@@ -251,9 +252,9 @@ class OrderingFilter:
 
 class FilterSetMeta(Type):
     def __new__(mcs, name, bases, namespace, **kwargs):
-        filters: List[Filter] = namespace.get('fields', [])
-        if not isinstance(filters, list):
-            raise ValueError('fields must be a list of Filter objects')
+        filters: Iterable[Filter] = namespace.get('fields', [])
+        if not isinstance(filters, Iterable):
+            raise ValueError('filters must be an iterable of Filter objects')
 
         param_map: Dict[str, Parameter] = {}
         ordering_filter: Optional[OrderingFilter] = namespace.get('ordering')
